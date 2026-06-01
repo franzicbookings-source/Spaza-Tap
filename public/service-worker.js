@@ -1,4 +1,4 @@
-const CACHE_NAME = "app-cache-v1";
+const CACHE_NAME = "spaza-tap-cache-v2";
 
 const STATIC_ASSETS = [
   "/",
@@ -38,6 +38,17 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  const url = event.request.url;
+  // Do not intercept or handle sensitive firebase, auth, firestore or external API responses
+  if (
+    url.includes("googleapis.com") ||
+    url.includes("firebase") ||
+    url.includes("firestore") ||
+    event.request.method !== "GET"
+  ) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );

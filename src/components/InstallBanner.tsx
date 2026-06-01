@@ -31,31 +31,37 @@ export function InstallBanner() {
     }
   }, []);
 
-  const checkVisibility = () => {
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
-
-    const dismissed = localStorage.getItem("spaza_tap_install_dismissed") || localStorage.getItem("installBannerDismissed");
-    const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
-
-    if (isStandalone || dismissed === "true" || appInstalled === "true") {
-      setIsVisible(deferredPrompt !== null); // If the browser fires beforeinstallprompt we might still allow it
-      if (isStandalone || appInstalled === "true") {
-        setIsVisible(false);
-      }
-    } else {
-      setIsVisible(true);
-    }
-  };
-
   useEffect(() => {
+    const checkVisibility = () => {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+
+      const dismissed = localStorage.getItem("spaza_tap_install_dismissed") || localStorage.getItem("installBannerDismissed");
+      const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
+
+      if (isStandalone || dismissed === "true" || appInstalled === "true") {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+    };
+
     checkVisibility();
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsVisible(true);
+      
+      const dismissed = localStorage.getItem("spaza_tap_install_dismissed") || localStorage.getItem("installBannerDismissed");
+      const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+
+      if (!isStandalone && dismissed !== "true" && appInstalled !== "true") {
+        setIsVisible(true);
+      }
     };
 
     const handleAppInstalled = () => {
@@ -81,7 +87,7 @@ export function InstallBanner() {
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("spaza-tap-reset-pwa", handleResetSignal);
     };
-  }, [deferredPrompt]);
+  }, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {

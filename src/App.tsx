@@ -362,7 +362,12 @@ export default function App() {
         const uid = cred.user.uid;
         const email = cred.user.email || "";
         const role = (localStorage.getItem("spaza_tap_auth_intent_role") || getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE) || "shop_owner") as "shop_owner" | "customer";
+        const mode = (localStorage.getItem("spaza_tap_auth_intent_mode") || "login") as "login" | "signup";
         
+        // Clear intent parameters
+        localStorage.removeItem("spaza_tap_auth_intent_role");
+        localStorage.removeItem("spaza_tap_auth_intent_mode");
+
         const userDocRef = doc(db, "users", uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -374,13 +379,64 @@ export default function App() {
             await signOut(auth);
           }
         } else {
+          // Check for recovery/linking (e.g. if another auth provider exists)
           const recovery = await recoverOrLinkAccount(uid, email, role);
-          if (recovery.success) {
-            await loadUserProfile(uid);
-          } else {
-            alert(recovery.message || "Failed to link account");
+          if (!recovery.success) {
+            alert(recovery.message || "Failed to link/recover account.");
             await signOut(auth);
+            return;
           }
+          if (recovery.message === "RECOVERED") {
+            await loadUserProfile(uid);
+            return;
+          }
+
+          // New profile registration boundary for "login" mode
+          if (mode === "login") {
+            alert("No account found for this Google profile. Please register first.");
+            await signOut(auth);
+            return;
+          }
+
+          // New user signup
+          const displayName = cred.user.displayName || email.split('@')[0];
+          const batch = writeBatch(db);
+          batch.set(userDocRef, {
+            id: uid,
+            uid: uid,
+            email: email,
+            displayName: displayName,
+            ownerName: displayName,
+            phoneNumber: cred.user.phoneNumber || "",
+            role: role,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+
+          if (role === "shop_owner") {
+            const shopId = "shop_" + Date.now();
+            const shopName = `${displayName}'s Shop`;
+            batch.set(userDocRef, { shopId: shopId }, { merge: true });
+            
+            const defaultTemplate = `Hi [Customer Name], this is a reminder that you owe R[Amount] at ${shopName}. Your balance has been outstanding for [Days] days. Please pay when possible. Thank you.`;
+            const shopDocRef = doc(db, "shops", shopId);
+            batch.set(shopDocRef, {
+              id: shopId,
+              shopName: shopName,
+              ownerUserId: uid,
+              ownerName: displayName,
+              phoneNumber: cred.user.phoneNumber || "",
+              defaultCreditLimit: 500,
+              reminderTemplate: defaultTemplate,
+              whatsappTemplate: defaultTemplate,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              code: Math.floor(100000 + Math.random() * 900000).toString()
+            });
+          }
+          
+          await batch.commit();
+          await loadUserProfile(uid);
         }
       }
     }).catch((e) => {
@@ -719,7 +775,7 @@ export default function App() {
   };
 
   // AUTH ACTIONS
-  const handleGoogleAuth = async (role: "shop_owner" | "customer"): Promise<string | null> => {
+  const handleGoogleAuth = async (role: "shop_owner" | "customer", mode: "login" | "signup"): Promise<string | null> => {
     try {
       const provider = new GoogleAuthProvider();
       const cred = await signInWithPopup(auth, provider);
@@ -759,12 +815,18 @@ export default function App() {
           return null;
         }
 
+        // New profile required - enforce "login" mode boundary
+        if (mode === "login") {
+          await signOut(auth);
+          return "No account found for this Google profile. Please register first.";
+        }
+
         // Completely New user signup
         const displayName = cred.user.displayName || email.split('@')[0];
         
         const batch = writeBatch(db);
         batch.set(userDocRef, {
-          id: uid, // Use id instead of uid for consistency with customer profiles? Wait, old signup did uid for shop owner and id for customer. Let's look at existing signup!
+          id: uid,
           uid: uid,
           email: email,
           displayName: displayName,
@@ -811,6 +873,7 @@ export default function App() {
       if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || /Android|iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent)) {
         try {
           localStorage.setItem("spaza_tap_auth_intent_role", role);
+          localStorage.setItem("spaza_tap_auth_intent_mode", mode);
           const provider = new GoogleAuthProvider();
           await signInWithRedirect(auth, provider);
           return null; // Redirect flow initiated
@@ -844,7 +907,7 @@ export default function App() {
         const userData = userDoc.data();
         if (userData.role !== "shop_owner") {
           await signOut(auth);
-          return "No store owner account found. Please check your details.";
+          return "This account is registered as a Customer. Please use the correct portal.";
         }
       } else {
         const recovery = await recoverOrLinkAccount(cred.user.uid, email, "shop_owner");
@@ -853,7 +916,7 @@ export default function App() {
           if (loadedRetry) return null;
         }
         await signOut(auth);
-        return "No store owner account found. Please check your details.";
+        return "Incorrect email or password.";
       }
       const loaded = await loadUserProfile(cred.user.uid);
       if (!loaded) {
@@ -863,18 +926,18 @@ export default function App() {
           if (loadedRetry) return null;
         }
         await signOut(auth);
-        return "No store owner account found. Please check your details.";
+        return "Incorrect email or password.";
       }
       return null;
     } catch (e: any) {
       if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
-        return "No store owner account found. Please check your details.";
+        return "Incorrect email or password.";
       }
       if (e.code === 'auth/too-many-requests') return "Too many attempts. Please wait and try again later.";
       if (e.code === 'auth/network-request-failed') return "Network error. Please check your internet connection.";
       if (e.code === 'auth/popup-closed-by-user') return "Google sign-in was cancelled.";
       if (e.code === 'auth/account-exists-with-different-credential') return "This email already exists with a different sign-in method. Please use the original method or link your account.";
-      return "No store owner account found. Please check your details.";
+      return "Incorrect email or password.";
     }
   };
 
@@ -967,27 +1030,27 @@ export default function App() {
         const userData = userDoc.data();
         if (userData.role !== "customer") {
           await signOut(auth);
-          return "No customer account found. Please check your details.";
+          return "This account is registered as a Shop Owner. Please use the correct portal.";
         }
       } else {
         await signOut(auth);
-        return "No customer account found. Please check your details.";
+        return "Incorrect email or password.";
       }
       const loaded = await loadUserProfile(cred.user.uid);
       if (!loaded) {
         await signOut(auth);
-        return "No customer account found. Please check your details.";
+        return "Incorrect email or password.";
       }
       return null;
     } catch (e: any) {
       if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
-        return "No customer account found. Please check your details.";
+        return "Incorrect email or password.";
       }
       if (e.code === 'auth/too-many-requests') return "Too many attempts. Please wait and try again later.";
       if (e.code === 'auth/network-request-failed') return "Network error. Please check your internet connection.";
       if (e.code === 'auth/popup-closed-by-user') return "Google sign-in was cancelled.";
       if (e.code === 'auth/account-exists-with-different-credential') return "This email already exists with a different sign-in method. Please use the original method or link your account.";
-      return "No customer account found. Please check your details.";
+      return "Incorrect email or password.";
     }
   };
 

@@ -9,7 +9,7 @@ interface WelcomeScreenProps {
   onCustomerLogin: (email: string, pin: string) => Promise<string | null>;
   onCustomerSignup: (fullName: string, phone: string, email: string, pin: string, referenceNumber: string) => Promise<string | null>;
   onPasswordReset?: (email: string) => Promise<string | null>;
-  onGoogleAuth?: (role: "shop_owner" | "customer") => Promise<string | null>;
+  onGoogleAuth?: (role: "shop_owner" | "customer", mode: "login" | "signup") => Promise<string | null>;
   onShopScanned?: (shopCode: string) => void;
 }
 
@@ -81,13 +81,13 @@ export default function WelcomeScreen({
     }
   };
 
-  const handleGoogleAuthClick = async () => {
+  const handleGoogleAuthClick = async (mode: "login" | "signup") => {
     if (isLoading || !onGoogleAuth || userRole === "none") return;
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     
-    const err = await onGoogleAuth(userRole);
+    const err = await onGoogleAuth(userRole, mode);
     setIsLoading(false);
     if (err) {
       setErrorMsg(err);
@@ -460,7 +460,7 @@ export default function WelcomeScreen({
               {/* Google login option */}
               <button
                 type="button"
-                onClick={handleGoogleAuthClick}
+                onClick={() => handleGoogleAuthClick("login")}
                 disabled={isLoading}
                 className="w-full h-13 bg-white border border-text-main/10 text-text-main font-bold text-sm rounded-[18px] shadow-xs active:scale-95 transition-transform flex items-center justify-center gap-3 disabled:opacity-70"
               >
@@ -567,7 +567,7 @@ export default function WelcomeScreen({
               {/* Google SignUp Integration Option */}
               <button
                 type="button"
-                onClick={handleGoogleAuthClick}
+                onClick={() => handleGoogleAuthClick("signup")}
                 disabled={isLoading}
                 className="w-full h-12 bg-white border border-text-main/10 text-text-main font-bold text-sm rounded-[16px] shadow-xs active:scale-95 transition-transform flex items-center justify-center gap-3 disabled:opacity-70"
               >
