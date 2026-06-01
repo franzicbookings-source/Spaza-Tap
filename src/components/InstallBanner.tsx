@@ -60,6 +60,7 @@ export function InstallBanner() {
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      console.log("PWA: beforeinstallprompt fired");
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
       const dismissedUntil = localStorage.getItem("spaza_tap_install_dismissed_until");
@@ -79,6 +80,7 @@ export function InstallBanner() {
     };
 
     const handleAppInstalled = () => {
+      console.log("PWA: app installed");
       localStorage.setItem("spaza_tap_app_installed", "true");
       setIsVisible(false);
     };
@@ -106,15 +108,18 @@ export function InstallBanner() {
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
+      console.log("PWA: install prompt opened");
       deferredPrompt.prompt();
       const result = await deferredPrompt.userChoice;
       if (result.outcome === "accepted") {
+        console.log("PWA: app installed (via prompt)");
         localStorage.setItem("spaza_tap_app_installed", "true");
       }
       setDeferredPrompt(null);
       setIsVisible(false);
     } else {
       // No native prompt available (e.g. iOS or manual browser). Show helpful guide modal!
+      console.log("PWA: fallback guide shown because native prompt is unavailable");
       setShowGuideModal(true);
     }
   };

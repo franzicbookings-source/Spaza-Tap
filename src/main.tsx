@@ -8,7 +8,7 @@ if ("serviceWorker" in navigator) {
   const registerServiceWorker = () => {
     navigator.serviceWorker.register("/service-worker.js")
       .then((reg) => {
-        console.log("Service Worker registered successfully:", reg.scope);
+        console.log("PWA: service worker registered", reg.scope);
       })
       .catch((err) => {
         console.error("Service Worker registration failed:", err);
