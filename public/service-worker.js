@@ -1,8 +1,10 @@
-const CACHE_NAME = "spaza-tap-cache-v3";
+const CACHE_NAME = "spaza-tap-cache-v4";
 
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
+  "/icons/icon.svg",
+  "/icons/spaza-tap-logo.svg",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png"
 ];
@@ -38,17 +40,6 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  const url = event.request.url;
-  // Do not intercept or handle sensitive firebase, auth, firestore or external API responses
-  if (
-    url.includes("googleapis.com") ||
-    url.includes("firebase") ||
-    url.includes("firestore") ||
-    event.request.method !== "GET"
-  ) {
-    return;
-  }
-
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
