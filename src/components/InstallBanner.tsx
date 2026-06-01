@@ -131,19 +131,20 @@ export function InstallBanner() {
   return (
     <>
       <div 
-        className="fixed z-60 animate-fade-in flex items-center justify-between"
+        className="fixed z-[9998] flex flex-row items-center justify-between"
         style={{
           bottom: 'calc(env(safe-area-inset-bottom) + 12px)',
           left: '12px',
           right: '12px',
-          width: 'auto',
+          width: '100%',
           maxWidth: '406px',
           margin: '0 auto',
           background: '#3B1A1A',
           color: 'white',
           borderRadius: '18px',
           padding: '12px',
-          gap: '10px'
+          gap: '10px',
+          boxSizing: 'border-box'
         }}
       >
         <div className="flex items-center gap-3 overflow-hidden">
@@ -186,71 +187,76 @@ export function InstallBanner() {
 
       {/* Elegant installation Instruction Dialog Backdrop */}
       {showGuideModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl border border-[#E5DACB] shadow-2xl p-6 w-full max-w-sm flex flex-col font-sans">
-            <div className="flex items-center justify-between border-b pb-3 mb-4">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 animate-fade-in">
+          <div className="w-[calc(100vw-32px)] max-w-[390px] min-w-0 box-border bg-white rounded-[24px] p-5 shadow-2xl flex flex-col font-sans">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4 shrink-0">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-[#C8521A]" />
-                <h3 className="font-display font-black text-sm uppercase text-[#3B1A1A] tracking-tight">
-                  Install on your device
-                </h3>
+                <Smartphone className="w-5 h-5 text-[#C8521A] shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <h3 className="font-display font-black text-sm uppercase text-[#3B1A1A] tracking-tight">
+                    Install Spaza Tap
+                  </h3>
+                  <span className="text-[10px] text-gray-500 font-medium">Add Spaza Tap to your phone for quick access.</span>
+                </div>
               </div>
               <button 
                 onClick={() => setShowGuideModal(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 active:scale-95 transition-transform"
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full bg-gray-50 active:scale-95 transition-transform shrink-0"
               >
-                <X className="w-4.5 h-4.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {platform === "ios" ? (
-              <div className="space-y-4">
-                <p className="text-xs font-bold text-[#6E463B] leading-relaxed">
-                  Safari on iOS does not support one-tap installs. Follow these quick steps to add Spaza Tap to your iPhone / iPad home screen:
-                </p>
-                <div className="space-y-3">
-                  <div className="flex gap-3 bg-[#FCF8F2] p-3 rounded-2xl border border-[#F2E4D5]">
-                    <div className="w-6 h-6 rounded-full bg-[#E8D0BB] text-[#C8521A] flex items-center justify-center font-black text-xs shrink-0 mt-0.5">1</div>
-                    <p className="text-xs font-bold text-[#553C35] leading-snug">
-                      Tap the <Share className="inline-block w-4 h-4 mx-1 text-blue-500" /> <strong>Share</strong> button in the browser tool bar.
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">1</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Tap the <strong>Share</strong> button in the browser menu.
                     </p>
                   </div>
-                  <div className="flex gap-3 bg-[#FCF8F2] p-3 rounded-2xl border border-[#F2E4D5]">
-                    <div className="w-6 h-6 rounded-full bg-[#E8D0BB] text-[#C8521A] flex items-center justify-center font-black text-xs shrink-0 mt-0.5">2</div>
-                    <p className="text-xs font-bold text-[#553C35] leading-snug">
-                      Scroll down and tap <PlusSquare className="inline-block w-4 h-4 mx-1 text-gray-600" /> <strong>Add to Home Screen</strong>.
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">2</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Choose <strong>"Add to Home Screen"</strong>.
                     </p>
                   </div>
-                  <div className="flex gap-3 bg-[#FCF8F2] p-3 rounded-2xl border border-[#F2E4D5]">
-                    <div className="w-6 h-6 rounded-full bg-[#E8D0BB] text-[#C8521A] flex items-center justify-center font-black text-xs shrink-0 mt-0.5">3</div>
-                    <p className="text-xs font-bold text-[#553C35] leading-snug">
-                      Confirm by tapping <strong>Add</strong> in the top right corner.
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">3</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Confirm by tapping <strong>Add</strong>.
                     </p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <p className="text-xs font-bold text-[#6E463B] leading-relaxed">
-                  To install Spaza Tap on your Android phone or other devices manually:
-                </p>
-                <div className="space-y-3">
-                  <div className="flex gap-3 bg-[#FCF8F2] p-3 rounded-2xl border border-[#F2E4D5]">
-                    <div className="w-6 h-6 rounded-full bg-[#E8D0BB] text-[#C8521A] flex items-center justify-center font-black text-xs shrink-0 mt-0.5">1</div>
-                    <p className="text-xs font-bold text-[#553C35] leading-snug">
-                      Tap the browser menu button (look for <strong>three dots</strong> or lines in the corner).
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">1</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Tap the browser menu <strong>(three dots)</strong>.
                     </p>
                   </div>
-                  <div className="flex gap-3 bg-[#FCF8F2] p-3 rounded-2xl border border-[#F2E4D5]">
-                    <div className="w-6 h-6 rounded-full bg-[#E8D0BB] text-[#C8521A] flex items-center justify-center font-black text-xs shrink-0 mt-0.5">2</div>
-                    <p className="text-xs font-bold text-[#553C35] leading-snug">
-                      Tap <strong>Add to Home Screen</strong> or <strong>Install App</strong>.
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">2</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Choose <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
                     </p>
                   </div>
-                  <div className="flex gap-3 bg-[#FCF8F2] p-3 rounded-2xl border border-[#F2E4D5]">
-                    <div className="w-6 h-6 rounded-full bg-[#E8D0BB] text-[#C8521A] flex items-center justify-center font-black text-xs shrink-0 mt-0.5">3</div>
-                    <p className="text-xs font-bold text-[#553C35] leading-snug">
-                      Confirm the installation dialog to finish!
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">3</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Confirm by tapping <strong>Add</strong> or <strong>Install</strong>.
                     </p>
                   </div>
                 </div>
@@ -259,7 +265,7 @@ export function InstallBanner() {
 
             <button 
               onClick={() => setShowGuideModal(false)}
-              className="mt-5 w-full bg-[#3B1A1A] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-black active:scale-95 transition-transform"
+              className="mt-5 w-full bg-[#3B1A1A] text-white py-3 rounded-xl font-bold text-[13px] uppercase tracking-wider hover:bg-[#2A1212] active:scale-95 transition-transform shrink-0"
             >
               Got it
             </button>
