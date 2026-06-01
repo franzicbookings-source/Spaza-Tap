@@ -1,4 +1,4 @@
-const CACHE_NAME = "spaza-tap-cache-v5";
+const CACHE_NAME = "spaza-tap-cache-v6";
 
 const STATIC_ASSETS = [
   "/",
