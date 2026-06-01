@@ -117,8 +117,13 @@ export default function DashboardScreen({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             {/* Logo Shop Mark */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E95A13] to-[#C9460B] flex items-center justify-center shadow-xs">
-              <span className="text-white font-extrabold text-sm tracking-tight font-display">ST</span>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+              <img 
+                src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                alt="Spaza Tap Logo" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <span className="text-[10px] font-bold text-text-light uppercase tracking-wider block">Spaza Tap Portal</span>

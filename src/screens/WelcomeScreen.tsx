@@ -247,23 +247,16 @@ export default function WelcomeScreen({
             className="flex-grow flex flex-col justify-between p-5 pb-8 relative"
           >
             {/* Top Brand Header Row */}
-            <div className="flex items-center justify-between w-full h-[64px]">
+            <div className="flex items-center justify-between w-full py-1">
               <div className="flex items-center gap-3">
-                {/* 52x52 Premium rounded Gradient App Icon */}
-                <div className="w-[52px] h-[52px] rounded-[16px] bg-gradient-to-br from-[#E95A13] to-[#C9460B] flex items-center justify-center shadow-md shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-shopping-bag">
-                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-                    <path d="M3 6h18"/>
-                    <path d="M16 10a4 4 0 0 1-8 0"/>
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-display font-black tracking-tight leading-tight uppercase text-text-main">
-                    Spaza Tap
-                  </h1>
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wide">
-                    Spaza Shop Credit & Shop Management
-                  </p>
+                {/* 72x72 Premium rounded Logo App Icon */}
+                <div className="w-[72px] h-[72px] overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+                  <img 
+                    src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                    alt="Spaza Tap Logo" 
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
               </div>
 

@@ -74,10 +74,15 @@ export default function CustomerJoinScreen({
       <main className="max-w-[420px] w-full flex-1 flex flex-col justify-center py-6 mx-auto">
         <div className="bg-white rounded-[28px] p-6 border border-[#2B1114]/8 shadow-2xs text-left">
           
-          {/* Shop Context header */}
+          {/* Shop Context logo */}
           <div className="flex items-center gap-3.5 mb-6 pb-4.5 border-b border-text-main/5">
-            <div className="w-11 h-11 rounded-full bg-[#FFF0E7] flex items-center justify-center text-[#D94F12] shrink-0 border border-primary/10">
-              <ShoppingBag className="w-5 h-5" />
+            <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+              <img 
+                src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                alt="Spaza Tap Logo" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div className="min-w-0">
               <span className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider leading-none block">JOINING TRUSTEE</span>

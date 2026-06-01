@@ -47,8 +47,13 @@ export default function DesktopSidebar({ currentScreen, onNavigate, onLogout, sh
       <div>
         <div className="p-6 pb-8 border-b border-white/10">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-[#C8521A] flex items-center justify-center font-black">
-              C
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+              <img 
+                src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                alt="Spaza Tap Logo" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <span className="font-display font-black text-xl tracking-tight leading-none uppercase">Cwebezela</span>
           </div>
