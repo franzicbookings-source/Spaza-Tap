@@ -25,6 +25,7 @@ export default function WelcomeScreen({
   // Navigation states: role selection first, then forms
   const [userRole, setUserRole] = useState<"none" | "shop_owner" | "customer">("none");
   const [activeForm, setActiveForm] = useState<"none" | "login" | "signup">("none");
+  const [logoFailed, setLogoFailed] = useState(false);
   
   // Shop Owner Form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -116,131 +117,143 @@ export default function WelcomeScreen({
         setErrorMsg("Password is required");
         return;
       }
-      if (customerPin.length < 6) {
-        setErrorMsg("Password must be at least 6 characters.");
-        return;
-      }
-      if (!customerRefNo.trim()) {
-        setErrorMsg("Customer reference number is required.");
-        return;
-      }
-
+      
       setIsLoading(true);
       const err = await onCustomerSignup(
-        customerName.trim(),
-        customerPhone.trim(),
-        customerEmail.trim(),
-        customerPin.trim(),
-        customerRefNo.trim()
+        customerName,
+        customerPhone,
+        customerEmail,
+        customerPin,
+        customerRefNo
       );
-      setIsLoading(true); // stay loading while we redirect
       setIsLoading(false);
       if (err) {
         setErrorMsg(err);
       }
-    } else {
-      if (!signupEmail.trim()) {
-        setErrorMsg("Email address is required");
-        return;
-      }
-      if (!signupShopName.trim()) {
-        setErrorMsg("Shop name is required");
-        return;
-      }
-      if (!signupOwnerName.trim()) {
-        setErrorMsg("Owner name is required");
-        return;
-      }
-      if (!signupPhone.trim()) {
-        setErrorMsg("Missing phone number");
-        return;
-      }
-      if (!signupPin.trim()) {
-        setErrorMsg("Missing password");
-        return;
-      }
-      if (signupPin.length < 6) {
-        setErrorMsg("Weak password. Minimum 6 characters.");
-        return;
-      }
-      setIsLoading(true);
-      const err = await onSignup(signupEmail, signupShopName, signupOwnerName, signupPhone, signupPin);
-      setIsLoading(false);
-      if (err) {
-        setErrorMsg(err);
-      }
+      return;
+    }
+
+    if (!signupEmail.trim()) {
+      setErrorMsg("Missing email address");
+      return;
+    }
+    if (!signupShopName.trim()) {
+      setErrorMsg("Spaza shop name is required");
+      return;
+    }
+    if (!signupOwnerName.trim()) {
+      setErrorMsg("Owner full name is required");
+      return;
+    }
+    if (!signupPhone.trim()) {
+      setErrorMsg("WhatsApp/cell number is required");
+      return;
+    }
+    if (!signupPin.trim()) {
+      setErrorMsg("Password is required");
+      return;
+    }
+
+    setIsLoading(true);
+    const err = await onSignup(signupEmail, signupShopName, signupOwnerName, signupPhone, signupPin);
+    setIsLoading(false);
+    if (err) {
+      setErrorMsg(err);
     }
   };
 
-  const handlePasswordResetClick = async () => {
-    if (!loginEmail.trim()) {
-      setErrorMsg("Please enter your email address first to reset your password.");
-      setSuccessMsg(null);
+  const handlePasswordReset = async () => {
+    if (!onPasswordReset) return;
+    const email = loginEmail || signupEmail || customerEmail;
+    if (!email.trim()) {
+      setErrorMsg("Enter your email address first, then tap reset.");
       return;
     }
-    if (!onPasswordReset) return;
-
     setIsLoading(true);
     setErrorMsg(null);
-    setSuccessMsg(null);
-    const err = await onPasswordReset(loginEmail.trim());
+    const err = await onPasswordReset(email);
     setIsLoading(false);
-    
     if (err) {
       setErrorMsg(err);
     } else {
-      setSuccessMsg("Password reset email sent! Check your inbox.");
-    }
-  };
-
-  const handleGoBack = () => {
-    if (activeForm !== "none") {
-      setActiveForm("none");
-      setErrorMsg(null);
-    } else {
-      setUserRole("none");
-      setErrorMsg(null);
+      setSuccessMsg("Password reset email sent. Check your inbox.");
     }
   };
 
   const clearForm = () => {
     setActiveForm("none");
-    setLoginEmail("");
-    setLoginPin("");
-    setSignupEmail("");
-    setSignupShopName("");
-    setSignupOwnerName("");
-    setSignupPhone("");
-    setSignupPin("");
-    setCustomerName("");
-    setCustomerPhone("");
-    setCustomerEmail("");
-    setCustomerPin("");
-    setCustomerRefNo("");
+    setUserRole("none");
     setErrorMsg(null);
     setSuccessMsg(null);
+    setScanError("");
+  };
+
+  const handleScanResult = (detectedCodes: any[]) => {
+    if (detectedCodes && detectedCodes.length > 0) {
+      const rawValue = detectedCodes[0].rawValue;
+      let code = "";
+      try {
+        const url = new URL(rawValue);
+        const pathParts = url.pathname.split('/');
+        if (pathParts.includes('join')) {
+          code = pathParts[pathParts.indexOf('join') + 1];
+        } else {
+          code = url.searchParams.get('join') || rawValue;
+        }
+      } catch (e) {
+        code = rawValue;
+      }
+      
+      if (code) {
+        setShowScanner(false);
+        setCustomerRefNo(code.toUpperCase());
+        setErrorMsg(null);
+        setSuccessMsg("Shop code scanned successfully!");
+        if (onShopScanned) onShopScanned(code.toUpperCase());
+      }
+    }
   };
 
   return (
-    <main className="w-full flex flex-col min-h-screen bg-background relative overflow-x-hidden">
-      {/* Absolute Back Icon for form navigation */}
-      {userRole !== "none" && (
-        <header className="absolute top-4 left-4 z-40">
-          <button 
-            onClick={handleGoBack}
-            className="w-11 h-11 bg-white border border-[#E5DACB] text-theme-main rounded-full flex items-center justify-center active:scale-95 transition-transform shadow-xs"
-            title="Go Back"
-          >
-            <ArrowLeft className="w-5 h-5 text-text-main" />
-          </button>
-        </header>
+    <div className="min-h-[100dvh] bg-background text-text-main font-sans overflow-hidden flex flex-col relative safe-area-inset">
+      {/* Abstract warm background */}
+      <div className="absolute top-[-80px] right-[-120px] w-[320px] h-[320px] bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-120px] left-[-80px] w-[280px] h-[280px] bg-burgundy/5 rounded-full blur-3xl pointer-events-none" />
+
+      {/* QR Scanner Modal */}
+      {showScanner && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col p-6 animate-fade-in">
+          <div className="flex justify-between items-center mb-8 text-white">
+            <h3 className="font-display font-black text-lg uppercase">Scan Shop QR</h3>
+            <button onClick={() => setShowScanner(false)} className="p-2 bg-white/10 rounded-full">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-sm aspect-square overflow-hidden rounded-3xl border-4 border-primary shadow-2xl">
+              <Scanner onScan={handleScanResult} onError={(err) => setScanError(String(err))} />
+            </div>
+          </div>
+          <p className="text-center text-white/70 text-sm mt-6 font-medium">Point camera at the shop owner's QR code</p>
+          {scanError && <p className="text-center text-danger text-xs mt-2">{scanError}</p>}
+        </div>
+      )}
+
+      {/* Back Button if not initial */}
+      {(userRole !== "none" || activeForm !== "none") && (
+        <button 
+          onClick={clearForm}
+          className="absolute top-6 left-6 z-20 w-11 h-11 rounded-full bg-white shadow-md flex items-center justify-center text-text-main active:scale-95 transition-transform"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
       )}
 
       <AnimatePresence mode="wait">
-        {/* Step 1: Portal Main Opening Welcome Screen */}
-        {userRole === "none" && (
+        {/* Step 1: Initial Landing */}
+        {userRole === "none" && activeForm === "none" && (
           <motion.div
-            key="welcome-root"
+            key="role-selection"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -249,16 +262,18 @@ export default function WelcomeScreen({
             {/* Top Brand Header Row */}
             <div className="flex items-center justify-between w-full py-1">
               <div className="flex items-center gap-3">
-                {/* 72x72 Premium rounded Logo App Icon */}
-                <div className="w-[72px] h-[72px] overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
-                  <span className="absolute font-black text-sm text-[#3B1A1A] leading-tight text-center">Spaza<br/>Tap</span>
-                  <img 
-                    src="/icons/spaza-tap-logo.png" 
-                    alt="" 
-                    className="w-full h-full object-contain relative z-10"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
+                <div className="w-[72px] h-[72px] rounded-[22px] overflow-hidden flex items-center justify-center bg-[#3B1A1A] shrink-0 relative shadow-sm border border-text-main/5">
+                  {!logoFailed && (
+                    <img 
+                      src="/icons/spaza-tap-logo.svg" 
+                      alt="Spaza Tap" 
+                      className="w-full h-full object-cover relative z-10"
+                      onError={() => setLogoFailed(true)}
+                    />
+                  )}
+                  {logoFailed && (
+                    <span className="font-black text-lg text-[#FBF5EC] leading-none tracking-tight">ST</span>
+                  )}
                 </div>
               </div>
 
@@ -383,7 +398,7 @@ export default function WelcomeScreen({
               <span className="bg-primary text-white text-[10px] uppercase font-display font-black tracking-widest px-3 py-1 rounded-full inline-block">
                 Customer Tab Portal
               </span>
-              <h2 className="text-3xl font-display font-black text-[#321316] uppercase tracking-tighter mt-2 leading-tight">
+              <h2 className="text-4xl font-display font-black text-[#321316] uppercase leading-none tracking-tighter">
                 Track Your Balance
               </h2>
               <p className="text-xs font-semibold text-text-muted leading-relaxed">
@@ -477,79 +492,64 @@ export default function WelcomeScreen({
               </div>
 
               <div className="space-y-2">
-                <label className="font-display font-bold text-xs text-primary tracking-widest uppercase">
-                  Email Address
+                <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
+                  {userRole === "customer" ? "Customer Email Address" : "Owner Email Address"}
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. zola@example.com"
+                  placeholder="e.g. owner@shop.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full h-12 bg-white px-4 border border-text-main/10 focus:border-primary text-text-main rounded-[14px] text-sm font-bold outline-none transition-colors"
+                  className="w-full h-14 bg-white px-5 border border-text-main/10 focus:border-primary text-text-main rounded-[18px] text-sm font-bold outline-none transition-colors placeholder:text-text-muted/40"
                 />
               </div>
-              
-              <div className="space-y-2 relative">
-                <div className="flex justify-between items-end">
-                  <label className="font-display font-bold text-xs text-primary tracking-widest uppercase">
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handlePasswordResetClick}
-                    disabled={isLoading}
-                    className="text-[10px] font-bold text-text-muted hover:text-primary uppercase tracking-wider"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
+              <div className="space-y-2">
+                <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
+                  Password
+                </label>
                 <input
                   type="password"
                   placeholder="••••••••"
                   value={loginPin}
                   onChange={(e) => setLoginPin(e.target.value)}
-                  className="w-full h-12 bg-white px-4 border border-text-main/10 focus:border-primary text-text-main rounded-[14px] text-sm font-bold tracking-widest outline-none transition-colors"
+                  className="w-full h-14 bg-white px-5 border border-text-main/10 focus:border-primary text-text-main rounded-[18px] text-sm font-bold outline-none transition-colors"
                 />
               </div>
+              
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                className="w-full text-right text-[11px] text-primary font-bold underline underline-offset-2"
+              >
+                Forgot password?
+              </button>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-[56px] bg-[#D94F12] text-white font-display font-extrabold text-sm rounded-[18px] mt-4 shadow-md active:scale-95 transition-transform uppercase tracking-wider disabled:opacity-75"
+                className="w-full h-14 bg-gradient-to-r from-primary to-primary-dark text-white rounded-[18px] font-display font-black uppercase tracking-wider shadow-md active:scale-95 transition-transform disabled:opacity-70"
               >
-                {isLoading ? "Authenticating..." : "Sign In"}
+                {isLoading ? "Please wait..." : "Log In"}
               </button>
-              
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => { setActiveForm("signup"); setErrorMsg(null); }}
-                  className="text-xs font-bold text-text-muted hover:text-primary transition-colors"
-                >
-                  Do not have an account? Create one
-                </button>
-              </div>
             </form>
           </motion.div>
         )}
 
-        {/* Step 4: Signup form panel */}
+        {/* Step 4: Signup Forms */}
         {userRole !== "none" && activeForm === "signup" && (
           <motion.div
             key="signup-form-panel"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="w-full p-6 pt-16"
+            className="w-full p-5 pt-16 overflow-y-auto"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <div>
                 <span className="text-[10px] text-primary tracking-widest uppercase font-display font-black">
-                  {userRole === "customer" ? "Customer Tab Creation" : "Setup Shop Account"}
+                  {userRole === "customer" ? "Create Customer Account" : "Setup Shop Account"}
                 </span>
-                <h2 className="text-2xl font-display font-black text-[#321316] uppercase tracking-tighter mt-1">
-                  Create Account
-                </h2>
+                <h2 className="text-2xl font-display font-black text-[#321316] uppercase tracking-tighter mt-1">Create Account</h2>
               </div>
               <button
                 onClick={clearForm}
@@ -652,7 +652,7 @@ export default function WelcomeScreen({
                       placeholder="••••••••"
                       value={customerPin}
                       onChange={(e) => setCustomerPin(e.target.value)}
-                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold tracking-widest outline-none transition-colors"
+                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none transition-colors"
                     />
                   </div>
                 </>
@@ -660,184 +660,39 @@ export default function WelcomeScreen({
                 /* Shop Owner Registration Form */
                 <>
                   <div className="space-y-1">
-                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
-                      Owner Email Address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="e.g. owner@shop.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none transition-colors"
-                    />
+                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">Owner Email Address</label>
+                    <input type="email" placeholder="e.g. owner@shop.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none" />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
-                      Spaza Shop Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Spaza Tap Store"
-                      value={signupShopName}
-                      onChange={(e) => setSignupShopName(e.target.value)}
-                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none transition-colors"
-                    />
+                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">Spaza Shop Name</label>
+                    <input type="text" placeholder="e.g. Spaza Tap Store" value={signupShopName} onChange={(e) => setSignupShopName(e.target.value)} className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none" />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
-                      My full name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Ntombi Cele"
-                      value={signupOwnerName}
-                      onChange={(e) => setSignupOwnerName(e.target.value)}
-                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none transition-colors"
-                    />
+                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">My Full Name</label>
+                    <input type="text" placeholder="e.g. Ntombi Cele" value={signupOwnerName} onChange={(e) => setSignupOwnerName(e.target.value)} className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none" />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
-                      WhatsApp/Cell Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="e.g. 082 123 4567"
-                      value={signupPhone}
-                      onChange={(e) => setSignupPhone(e.target.value)}
-                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none transition-colors"
-                    />
+                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">WhatsApp/Cell Phone Number</label>
+                    <input type="tel" placeholder="e.g. 082 123 4567" value={signupPhone} onChange={(e) => setSignupPhone(e.target.value)} className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none" />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">
-                      Password (6+ characters)
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupPin}
-                      onChange={(e) => setSignupPin(e.target.value)}
-                      className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold tracking-widest outline-none transition-colors"
-                    />
+                    <label className="font-display font-bold text-[11px] text-primary tracking-widest uppercase">Password (6+ characters)</label>
+                    <input type="password" placeholder="••••••••" value={signupPin} onChange={(e) => setSignupPin(e.target.value)} className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold outline-none" />
                   </div>
                 </>
               )}
-              
+
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-13 bg-[#321316] text-white font-display font-bold text-sm rounded-[16px] mt-6 shadow-md active:scale-95 transition-transform uppercase tracking-wider disabled:opacity-75 flex items-center justify-center"
+                className="w-full h-13 bg-gradient-to-r from-primary to-primary-dark text-white rounded-[16px] font-display font-black uppercase tracking-wider shadow-md active:scale-95 transition-transform disabled:opacity-70 mt-2"
               >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving Account...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
+                {isLoading ? "Creating..." : userRole === "customer" ? "Create Customer Account" : "Register Shop"}
               </button>
-              
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => { setActiveForm("login"); setErrorMsg(null); }}
-                  className="text-xs font-bold text-text-muted hover:text-primary transition-colors"
-                >
-                  Already have an account? Sign in
-                </button>
-              </div>
             </form>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* QR Scanner Modal System */}
-      {showScanner && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-burgundy/85 backdrop-blur-xs flex-col">
-          <div className="bg-white rounded-3xl max-w-[360px] w-full p-4.5 relative overflow-hidden flex flex-col items-center shadow-2xl">
-            <button
-              onClick={() => setShowScanner(false)}
-              className="absolute right-4 top-4 w-9 h-9 flex items-center justify-center bg-[#F1EBE4] text-[#321316] rounded-full z-[70] active:scale-95 transition-transform"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="w-full text-center mt-2 mb-4 pr-10">
-              <h2 className="text-xl font-display font-black text-[#321316] uppercase tracking-tight">
-                Scan Reference QR
-              </h2>
-              <p className="text-xs font-semibold text-[#756766] leading-tight mt-1">
-                Point your camera at the reference QR code provided by the tuckshop owner.
-              </p>
-            </div>
-
-            <div className="w-full h-[280px] bg-black rounded-2xl overflow-hidden relative border border-[#F1EBE4]">
-              <Scanner
-                onScan={(detectedCodes) => {
-                  if (detectedCodes.length > 0) {
-                    const rawValue = detectedCodes[0].rawValue;
-                    if (!rawValue) return;
-                    
-                    const trimmed = rawValue.trim();
-                    
-                    // Case A: It's a shop join link URL (e.g., https://.../join/SWE123)
-                    if (trimmed.toLowerCase().includes('/join/')) {
-                      try {
-                        const parts = trimmed.split('/join/');
-                        const code = parts[parts.length - 1].split('?')[0].trim().toUpperCase();
-                        if (code && onShopScanned) {
-                          onShopScanned(code);
-                          setShowScanner(false);
-                          return;
-                        }
-                      } catch (e) {
-                        console.error("Failed to parse shop join link", e);
-                      }
-                    }
-
-                    // Case B: Full URL containing customer ID (e.g. https://.../SPT-THA-4821 or CWE-THA-4821)
-                    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-                      try {
-                        const url = new URL(trimmed);
-                        const pathParts = url.pathname.split('/').filter(Boolean);
-                        if (pathParts.length > 0) {
-                          const lastSegment = pathParts[pathParts.length - 1].trim().toUpperCase();
-                          if (lastSegment && lastSegment !== "join") {
-                            setCustomerRefNo(lastSegment);
-                            setShowScanner(false);
-                            return;
-                          }
-                        }
-                      } catch (e) {
-                        console.error("Failed to parse customer URL", e);
-                      }
-                    }
-
-                    // Case C: Standard raw customer reference format (e.g. SPT-THA-4821 or CWE-THA-4821)
-                    setCustomerRefNo(trimmed);
-                    setShowScanner(false);
-                  }
-                }}
-                onError={(err: any) => {
-                  setScanError(err?.message || "Failed to start camera.");
-                }}
-                constraints={{ facingMode: "environment" }}
-                formats={['qr_code']}
-              />
-            </div>
-
-            {scanError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl w-full">
-                <p className="text-[11px] font-bold text-red-700 text-center uppercase tracking-wide">
-                  {scanError}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </main>
+    </div>
   );
 }
