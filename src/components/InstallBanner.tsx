@@ -1,172 +1,96 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Download, X, Smartphone } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Download, X, Share, PlusSquare, Smartphone } from "lucide-react";
 
+// Add global type for BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
   readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
-    platform: string;
+    outcome: 'accepted' | 'dismissed',
+    platform: string
   }>;
   prompt(): Promise<void>;
-}
-
-function isStandaloneMode() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as any).standalone === true
-  );
-}
-
-function getPlatform(): "ios" | "android" | "desktop" | "other" {
-  const ua = window.navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(ua)) return "ios";
-  if (/android/.test(ua)) return "android";
-  if (/macintosh|windows|linux/.test(ua)) return "desktop";
-  return "other";
-}
-
-function isDismissedForNow() {
-  const dismissedUntil = localStorage.getItem("spaza_tap_install_dismissed_until");
-  if (!dismissedUntil) return false;
-
-  const timestamp = Number.parseInt(dismissedUntil, 10);
-  if (!Number.isFinite(timestamp) || Date.now() >= timestamp) {
-    localStorage.removeItem("spaza_tap_install_dismissed_until");
-    return false;
-  }
-
-  return true;
-}
-
-function InstallIcon() {
-  return (
-    <div
-      style={{
-        width: 48,
-        height: 48,
-        minWidth: 48,
-        borderRadius: 14,
-        background: "#FBF5EC",
-        color: "#3B1A1A",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontWeight: 900,
-        letterSpacing: "-0.04em",
-        overflow: "hidden",
-      }}
-      aria-hidden="true"
-    >
-      <img
-        src="/icons/spaza-tap-logo.svg"
-        alt=""
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-      />
-      <span style={{ position: "absolute", pointerEvents: "none" }}>ST</span>
-    </div>
-  );
-}
-
-function StepCard({ number, children }: { number: number; children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        boxSizing: "border-box",
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
-        padding: 12,
-        borderRadius: 16,
-        background: "#FBF5EC",
-        border: "1px solid rgba(59, 26, 26, 0.08)",
-      }}
-    >
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          minWidth: 28,
-          borderRadius: 999,
-          background: "#FFFFFF",
-          color: "#D94F12",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 900,
-          fontSize: 13,
-          border: "1px solid rgba(59, 26, 26, 0.08)",
-        }}
-      >
-        {number}
-      </div>
-      <p
-        style={{
-          flex: 1,
-          minWidth: 0,
-          margin: 0,
-          color: "#3B1A1A",
-          fontSize: 13,
-          lineHeight: 1.38,
-          fontWeight: 650,
-          textAlign: "left",
-          overflowWrap: "normal",
-          wordBreak: "normal",
-          whiteSpace: "normal",
-        }}
-      >
-        {children}
-      </p>
-    </div>
-  );
 }
 
 export function InstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
-  const platform = useMemo(() => (typeof window !== "undefined" ? getPlatform() : "other"), []);
+  const [platform, setPlatform] = useState<"ios" | "android" | "desktop" | "other">("other");
+
+  // Determine platform
+  useEffect(() => {
+    const ua = window.navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) {
+      setPlatform("ios");
+    } else if (/android/.test(ua)) {
+      setPlatform("android");
+    } else if (/macintosh|windows|linux/.test(ua)) {
+      setPlatform("desktop");
+    } else {
+      setPlatform("other");
+    }
+  }, []);
 
   useEffect(() => {
-    const refreshVisibility = () => {
-      const installedFlag = localStorage.getItem("spaza_tap_app_installed") === "true";
-      const oldInstalledFlag = localStorage.getItem("appInstalled") === "true";
+    const checkVisibility = () => {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
 
-      if (isStandaloneMode() || installedFlag || oldInstalledFlag || isDismissedForNow()) {
-        setIsVisible(false);
-        return;
+      const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
+      
+      const dismissedUntil = localStorage.getItem("spaza_tap_install_dismissed_until");
+      let isDismissed = false;
+      if (dismissedUntil) {
+        if (Date.now() < parseInt(dismissedUntil, 10)) {
+          isDismissed = true;
+        } else {
+          localStorage.removeItem("spaza_tap_install_dismissed_until");
+        }
       }
 
-      setIsVisible(true);
+      if (isStandalone || isDismissed || appInstalled === "true") {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
     };
 
-    refreshVisibility();
+    checkVisibility();
 
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-      if (!isStandaloneMode() && !isDismissedForNow()) {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      
+      const dismissedUntil = localStorage.getItem("spaza_tap_install_dismissed_until");
+      let isDismissed = false;
+      if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
+        isDismissed = true;
+      }
+      
+      const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+
+      if (!isStandalone && !isDismissed && appInstalled !== "true") {
         setIsVisible(true);
       }
     };
 
     const handleAppInstalled = () => {
       localStorage.setItem("spaza_tap_app_installed", "true");
-      setDeferredPrompt(null);
       setIsVisible(false);
-      setShowGuideModal(false);
     };
 
+    // Listen to manual reset signal from Settings Screen
     const handleResetSignal = () => {
       localStorage.removeItem("spaza_tap_install_dismissed_until");
       localStorage.removeItem("spaza_tap_install_dismissed");
       localStorage.removeItem("spaza_tap_app_installed");
       localStorage.removeItem("installBannerDismissed");
       localStorage.removeItem("appInstalled");
-      refreshVisibility();
+      checkVisibility();
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -181,224 +105,167 @@ export function InstallBanner() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      setShowGuideModal(true);
-      return;
-    }
-
-    try {
-      await deferredPrompt.prompt();
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
       const result = await deferredPrompt.userChoice;
       if (result.outcome === "accepted") {
         localStorage.setItem("spaza_tap_app_installed", "true");
       }
-    } finally {
       setDeferredPrompt(null);
       setIsVisible(false);
+    } else {
+      // No native prompt available (e.g. iOS or manual browser). Show helpful guide modal!
+      setShowGuideModal(true);
     }
   };
 
   const handleClose = () => {
     setIsVisible(false);
-    localStorage.setItem("spaza_tap_install_dismissed_until", String(Date.now() + 24 * 60 * 60 * 1000));
+    // Hide for 24 hours
+    const hideUntil = Date.now() + 24 * 60 * 60 * 1000;
+    localStorage.setItem("spaza_tap_install_dismissed_until", hideUntil.toString());
   };
 
   if (!isVisible) return null;
 
   return (
     <>
-      <div
+      <div 
+        className="fixed z-[9998] flex flex-row items-center justify-between"
         style={{
-          position: "fixed",
-          left: 12,
-          right: 12,
-          bottom: "calc(env(safe-area-inset-bottom) + 12px)",
-          zIndex: 9998,
-          display: "flex",
-          justifyContent: "center",
-          pointerEvents: "none",
+          bottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+          left: '12px',
+          right: '12px',
+          width: '100%',
+          maxWidth: '406px',
+          margin: '0 auto',
+          background: '#3B1A1A',
+          color: 'white',
+          borderRadius: '18px',
+          padding: '12px',
+          gap: '10px',
+          boxSizing: 'border-box'
         }}
       >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 406,
-            boxSizing: "border-box",
-            background: "#3B1A1A",
-            color: "#FFFFFF",
-            borderRadius: 18,
-            padding: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 10,
-            boxShadow: "0 18px 40px rgba(59, 26, 26, 0.30)",
-            pointerEvents: "auto",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-            <InstallIcon />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 900, lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                Install Spaza Tap
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.72)",
-                  lineHeight: 1.25,
-                  marginTop: 3,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                Add to your home screen.
-              </div>
-            </div>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden border border-[#C8521A]/20 shadow-md bg-white flex items-center justify-center relative">
+            <span className="text-[#3B1A1A] font-bold text-lg absolute">ST</span>
+            <img 
+              src="/icons/icon-192x192.png" 
+              alt="" 
+              className="w-full h-full object-cover relative z-10"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }} 
+            />
           </div>
+          <div className="flex flex-col min-w-0">
+            <strong className="text-sm font-extrabold tracking-tight whitespace-nowrap">Install Spaza Tap</strong>
+            <span className="text-[10px] text-gray-300 leading-snug hidden sm:block truncate pr-2">
+              Add the app to your home screen.
+            </span>
+          </div>
+        </div>
 
-          <button
-            type="button"
+        <div className="flex items-center gap-2 shrink-0">
+          <button 
             onClick={handleInstallClick}
-            style={{
-              height: 42,
-              border: 0,
-              borderRadius: 14,
-              background: "#D94F12",
-              color: "#FFFFFF",
-              padding: "0 14px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 7,
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              flexShrink: 0,
-            }}
+            className="bg-[#C8521A] hover:bg-[#B04112] text-white text-[11px] font-black px-3.5 py-2.5 rounded-xl uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer shadow-md"
           >
-            <Download size={16} />
-            Install
+            <Download className="w-3.5 h-3.5" />
+            <span>Install</span>
           </button>
-
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Dismiss install banner"
-            style={{
-              width: 32,
-              height: 32,
-              border: 0,
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.10)",
-              color: "rgba(255,255,255,0.70)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
+          <button 
+            onClick={handleClose} 
+            className="p-1 text-gray-400 hover:text-white rounded-full bg-white/10 active:scale-90 transition-transform cursor-pointer shrink-0"
+            aria-label="Dismiss banner"
           >
-            <X size={17} />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
+      {/* Elegant installation Instruction Dialog Backdrop */}
       {showGuideModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(0,0,0,0.62)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              width: "calc(100vw - 32px)",
-              maxWidth: 390,
-              minWidth: 300,
-              boxSizing: "border-box",
-              background: "#FFFFFF",
-              borderRadius: 24,
-              padding: 20,
-              boxShadow: "0 24px 70px rgba(0,0,0,0.28)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                <Smartphone size={22} color="#D94F12" style={{ flexShrink: 0 }} />
-                <div style={{ minWidth: 0 }}>
-                  <h3 style={{ margin: 0, color: "#3B1A1A", fontSize: 18, lineHeight: 1.1, fontWeight: 900 }}>
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 animate-fade-in">
+          <div className="w-[calc(100vw-32px)] max-w-[390px] min-w-0 box-border bg-white rounded-[24px] p-5 shadow-2xl flex flex-col font-sans">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-[#C8521A] shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <h3 className="font-display font-black text-sm uppercase text-[#3B1A1A] tracking-tight">
                     Install Spaza Tap
                   </h3>
-                  <p style={{ margin: "5px 0 0", color: "#756766", fontSize: 13, lineHeight: 1.35, fontWeight: 600 }}>
-                    Add Spaza Tap to your phone for quick access.
-                  </p>
+                  <span className="text-[10px] text-gray-500 font-medium">Add Spaza Tap to your phone for quick access.</span>
                 </div>
               </div>
-              <button
-                type="button"
+              <button 
                 onClick={() => setShowGuideModal(false)}
-                aria-label="Close install guide"
-                style={{
-                  width: 34,
-                  height: 34,
-                  border: 0,
-                  borderRadius: 999,
-                  background: "#F3EEE8",
-                  color: "#3B1A1A",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full bg-gray-50 active:scale-95 transition-transform shrink-0"
               >
-                <X size={18} />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-              {platform === "ios" ? (
-                <>
-                  <StepCard number={1}>Tap the <strong>Share</strong> button in Safari.</StepCard>
-                  <StepCard number={2}>Choose <strong>Add to Home Screen</strong>.</StepCard>
-                  <StepCard number={3}>Confirm by tapping <strong>Add</strong>.</StepCard>
-                </>
-              ) : (
-                <>
-                  <StepCard number={1}>Tap the browser menu <strong>(three dots)</strong>.</StepCard>
-                  <StepCard number={2}>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</StepCard>
-                  <StepCard number={3}>Confirm by tapping <strong>Add</strong> or <strong>Install</strong>.</StepCard>
-                </>
-              )}
-            </div>
+            {platform === "ios" ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">1</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Tap the <strong>Share</strong> button in the browser menu.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">2</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Choose <strong>"Add to Home Screen"</strong>.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">3</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Confirm by tapping <strong>Add</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">1</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Tap the browser menu <strong>(three dots)</strong>.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">2</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Choose <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 w-full p-3 rounded-2xl bg-[#FBF5EC] border border-[#3B1A1A]/10 items-start box-border">
+                  <div className="w-7 h-7 rounded-full bg-white text-[#C8521A] flex items-center justify-center font-black text-sm shrink-0 border border-[#3B1A1A]/5 shadow-sm">3</div>
+                  <div className="flex-[1_1_100%] min-w-0 pt-0.5">
+                    <p className="w-full text-[13px] text-[#3B1A1A] leading-[1.35] text-left break-words">
+                      Confirm by tapping <strong>Add</strong> or <strong>Install</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <button
-              type="button"
+            <button 
               onClick={() => setShowGuideModal(false)}
-              style={{
-                width: "100%",
-                height: 48,
-                border: 0,
-                borderRadius: 14,
-                background: "#3B1A1A",
-                color: "#FFFFFF",
-                fontWeight: 900,
-                fontSize: 13,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-              }}
+              className="mt-5 w-full bg-[#3B1A1A] text-white py-3 rounded-xl font-bold text-[13px] uppercase tracking-wider hover:bg-[#2A1212] active:scale-95 transition-transform shrink-0"
             >
               Got it
             </button>
