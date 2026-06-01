@@ -141,7 +141,6 @@ export function InstallBanner() {
           bottom: 'calc(env(safe-area-inset-bottom) + 12px)',
           left: '12px',
           right: '12px',
-          width: '100%',
           maxWidth: '406px',
           margin: '0 auto',
           background: '#3B1A1A',
