@@ -1,6 +1,6 @@
 {
-  "name": "Cwebezela Tab",
-  "description": "A spaza shop ledger app for tracking customer credit and access requests.",
+  "name": "Spaza Tap",
+  "description": "Spaza shop and tuckshop management app. Helps shop owners manage customer credit, payments, stock, sales, till action, and customer QR access.",
   "requestFramePermissions": [
     "camera"
   ],

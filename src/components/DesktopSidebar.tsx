@@ -49,13 +49,13 @@ export default function DesktopSidebar({ currentScreen, onNavigate, onLogout, sh
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-transparent shrink-0">
               <img 
-                src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                src="/logo.png" 
                 alt="Spaza Tap Logo" 
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
               />
             </div>
-            <span className="font-display font-black text-xl tracking-tight leading-none uppercase">Cwebezela</span>
+            <span className="font-display font-black text-xl tracking-tight leading-none uppercase">Spaza Tap</span>
           </div>
           <p className="text-[10px] font-mono text-white/50 tracking-wider">LEDGER &bull; SP</p>
         </div>

@@ -18,7 +18,8 @@ import {
   Users,
   ShieldCheck,
   Calendar,
-  Key
+  Key,
+  RefreshCw
 } from "lucide-react";
 
 interface SettingsScreenProps {
@@ -439,7 +440,7 @@ export default function SettingsScreen({
                 const doc = new jsPDF();
                 doc.setFontSize(22);
                 doc.setTextColor(59, 26, 26);
-                doc.text("Cwebezela Tab", 20, 30);
+                doc.text("Spaza Tap", 20, 30);
                 
                 doc.setFontSize(14);
                 doc.setTextColor(200, 82, 26);
@@ -450,7 +451,7 @@ export default function SettingsScreen({
                 
                 const proposalText = `To the Municipality / Local Partners,
 
-We present Cwebezela Tab, an innovative offline-first digital tab management 
+We present Spaza Tap, an innovative offline-first digital tab management 
 platform designed to empower informal economy spaza shops across South Africa 
 and specifically in Northern KZN.
 
@@ -461,7 +462,7 @@ loss, fire, disputes, and mismanagement, leaving spaza owners vulnerable to
 crippling bad debt and missing vital cash-ups.
 
 THE SOLUTION:
-Cwebezela Tab replaces the black book with a secure, cloud-synced digital 
+Spaza Tap replaces the black book with a secure, cloud-synced digital 
 platform accessible from any smartphone. 
 
 KEY FEATURES:
@@ -475,7 +476,7 @@ KEY FEATURES:
   or network outages.
 
 MUNICIPALITY PARTNERSHIP POTENTIAL:
-By endorsing Cwebezela Tab, the municipality can foster financial inclusion, 
+By endorsing Spaza Tap, the municipality can foster financial inclusion, 
 help formalize informal businesses, collect macro-level economic data on 
 township economies, and disseminate vital compliance guidelines directly to 
 merchants.
@@ -490,7 +491,7 @@ ${localShopName} / ${localOwnerName}
                 const splitText = doc.splitTextToSize(proposalText, 170);
                 doc.text(splitText, 20, 60);
 
-                doc.save("Cwebezela_Spaza_Proposal.pdf");
+                doc.save("Spaza_Tap_Spaza_Proposal.pdf");
               } catch (e) {
                  alert("Could not generate PDF");
               }
@@ -533,7 +534,30 @@ ${localShopName} / ${localOwnerName}
                   How to Install PWA
                 </span>
                 <span className="text-[10px] font-bold text-[#6E463B]">
-                  Install Cwebezela Tab directly on your Android / iOS home screen.
+                  Install Spaza Tap directly on your Android / iOS home screen.
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="text-[#C8521A] w-4 h-4 shrink-0" />
+          </div>
+
+          <div
+            onClick={() => {
+              window.dispatchEvent(new Event("spaza-tap-reset-pwa"));
+              alert("Install Banner has been reset. It will now appear on your screen if applicable.");
+            }}
+            className="bg-[#f9ede0] border border-[#E8D0BB] p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-transform cursor-pointer shadow-xs"
+          >
+            <div className="flex items-center">
+              <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center mr-3 shrink-0">
+                <RefreshCw className="w-4 h-4 text-[#C8521A]" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-extrabold text-[#3B1A1A]">
+                  Reset Install Banner
+                </span>
+                <span className="text-[10px] font-bold text-[#6E463B]">
+                  Make the installation prompt reappear.
                 </span>
               </div>
             </div>

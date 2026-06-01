@@ -119,7 +119,7 @@ export default function DashboardScreen({
             {/* Logo Shop Mark */}
             <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-transparent shrink-0">
               <img 
-                src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                src="/logo.png" 
                 alt="Spaza Tap Logo" 
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"

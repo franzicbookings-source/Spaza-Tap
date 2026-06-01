@@ -41,7 +41,7 @@ export default function CustomerRequestStatusScreen({
       {/* Top Brand Logo */}
       <div className="w-full max-w-[420px] text-center">
         <h1 className="text-xl font-display font-black text-[#3B1A1A] tracking-tighter uppercase leading-none mb-1">
-          CWEBEZELA TAB
+          SPAZA TAP
         </h1>
         <p className="text-[10px] font-mono text-[#C8521A] uppercase tracking-widest">
           Customer Ledger Access

@@ -141,7 +141,7 @@ export default function CustomerDashboardScreen({
               {customer.name}
             </h1>
             <span className="text-[9px] font-mono font-bold text-text-light mt-1.5 uppercase tracking-wider leading-none">
-              REF CODE: {customer.customerReferenceNumber || "CWE-00000"}
+              REF CODE: {customer.customerReferenceNumber || "SPT-00000"}
             </span>
           </div>
           

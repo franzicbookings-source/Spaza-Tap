@@ -142,7 +142,7 @@ export function MunicipalityScreen({ onBack, shopId, ownerUserId, account }: { o
   const distMuni = account.districtMunicipality || "Unknown District";
   
   const generateTemplate = (issueType: string) => {
-    const text = `Hi, I would like to report a municipal issue for my shop.\n\nShop name: ${account.shopName || "Cwebezela Spaza"}\nTown: ${account.town || ""}\nAddress: ${account.shopAddress || ""}\nIssue: ${issueType}\nContact number: ${account.phone || ""}\n\nPlease assist.`;
+    const text = `Hi, I would like to report a municipal issue for my shop.\n\nShop name: ${account.shopName || "Spaza Tap Shop"}\nTown: ${account.town || ""}\nAddress: ${account.shopAddress || ""}\nIssue: ${issueType}\nContact number: ${account.phone || ""}\n\nPlease assist.`;
     navigator.clipboard.writeText(text);
     setCopiedText(text);
   };
@@ -637,7 +637,7 @@ export function BusinessRegScreen({ onBack, shopId, ownerUserId, account }: { on
               <input 
                 value={regForm.companyName} 
                 onChange={e => setRegForm({ ...regForm, companyName: e.target.value })}
-                placeholder="e.g. Cwebezela Trading PTY LTD" 
+                placeholder="e.g. Spaza Tap Trading PTY LTD" 
                 className="w-full bg-slate-50 border border-[#E5DACB] px-4 py-3 rounded-xl text-sm font-bold outline-none focus:border-[#C8521A]"
               />
             </div>
@@ -1305,7 +1305,7 @@ export function FundingScreen({ onBack, shopId, ownerUserId, account }: { onBack
             { id: "sars", label: "SARS Good Standing Status" },
             { id: "bank", label: "3-Month business bank account history" },
             { id: "permit", label: "Valid Town council trade licence" },
-            { id: "ledger", label: "Active digital debtor recording ledger (Cwebezela)" }
+            { id: "ledger", label: "Active digital debtor recording ledger (Spaza Tap)" }
           ].map(item => (
             <div 
               key={item.id} 

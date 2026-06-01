@@ -1,7 +1,7 @@
 {
-  "name": "Cwebezela Tab",
-  "short_name": "Cwebezela",
-  "description": "Manage your spaza credit or track your tab balance instantly.",
+  "name": "Spaza Tap",
+  "short_name": "Spaza Tap",
+  "description": "Spaza shop and tuckshop credit and shop management application.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

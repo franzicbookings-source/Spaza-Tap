@@ -252,7 +252,7 @@ export default function WelcomeScreen({
                 {/* 72x72 Premium rounded Logo App Icon */}
                 <div className="w-[72px] h-[72px] overflow-hidden flex items-center justify-center bg-transparent shrink-0">
                   <img 
-                    src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                    src="/logo.png" 
                     alt="Spaza Tap Logo" 
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"
@@ -623,7 +623,7 @@ export default function WelcomeScreen({
                     </div>
                     <input
                       type="text"
-                      placeholder="e.g. CWE-THA-4821"
+                      placeholder="e.g. SPT-THA-4821"
                       value={customerRefNo}
                       onChange={(e) => setCustomerRefNo(e.target.value)}
                       className="w-full h-11 bg-white px-3.5 border border-text-main/10 focus:border-primary text-text-main rounded-[12px] text-xs font-bold placeholder-text-muted/40 outline-none transition-colors"
@@ -795,7 +795,7 @@ export default function WelcomeScreen({
                       }
                     }
 
-                    // Case B: Full URL containing customer ID (e.g. https://.../CWE-THA-4821)
+                    // Case B: Full URL containing customer ID (e.g. https://.../SPT-THA-4821 or CWE-THA-4821)
                     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
                       try {
                         const url = new URL(trimmed);
@@ -813,7 +813,7 @@ export default function WelcomeScreen({
                       }
                     }
 
-                    // Case C: Standard raw customer reference format (e.g. CWE-THA-4821)
+                    // Case C: Standard raw customer reference format (e.g. SPT-THA-4821 or CWE-THA-4821)
                     setCustomerRefNo(trimmed);
                     setShowScanner(false);
                   }

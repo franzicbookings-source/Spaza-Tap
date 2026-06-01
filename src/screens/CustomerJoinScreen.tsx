@@ -78,7 +78,7 @@ export default function CustomerJoinScreen({
           <div className="flex items-center gap-3.5 mb-6 pb-4.5 border-b border-text-main/5">
             <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-transparent shrink-0">
               <img 
-                src="https://i.ibb.co/6RphB5Y1/152733-removebg-preview.png" 
+                src="/logo.png" 
                 alt="Spaza Tap Logo" 
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"

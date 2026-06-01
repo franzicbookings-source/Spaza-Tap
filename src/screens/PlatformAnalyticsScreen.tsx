@@ -92,7 +92,7 @@ export default function PlatformAnalyticsScreen({ onBack, currentUserEmail }: Pl
   const actions = events.filter(e => e.eventType === "action");
 
   // Unique users tracking
-  const uniqueUsers = Array.from(new Set(events.map(e => e.userEmail || e.userId))).filter(Boolean);
+  const uniqueUsers = Array.from(new Set(events.map(e => e.userEmail || e.userId))).filter(Boolean) as string[];
 
   // Role distribution
   const rolesCount = events.reduce((acc, e) => {
@@ -107,7 +107,7 @@ export default function PlatformAnalyticsScreen({ onBack, currentUserEmail }: Pl
     return acc;
   }, {} as Record<string, number>);
 
-  const sortedPages = Object.entries(pagePopularity)
+  const sortedPages = (Object.entries(pagePopularity) as [string, number][])
     .sort((a, b) => b[1] - a[1]);
 
   // Page duration averages
@@ -120,7 +120,7 @@ export default function PlatformAnalyticsScreen({ onBack, currentUserEmail }: Pl
     return acc;
   }, {} as Record<string, { total: number; count: number }>);
 
-  const averageDurations = Object.entries(pageDurations).map(([page, data]) => ({
+  const averageDurations = (Object.entries(pageDurations) as [string, { total: number; count: number }][]).map(([page, data]) => ({
     page,
     average: Math.round(data.total / data.count),
     total: data.total,
@@ -134,7 +134,7 @@ export default function PlatformAnalyticsScreen({ onBack, currentUserEmail }: Pl
     return acc;
   }, {} as Record<string, number>);
 
-  const sortedClicks = Object.entries(clickPopularity)
+  const sortedClicks = (Object.entries(clickPopularity) as [string, number][])
     .map(([key, count]) => {
       const [page, label] = key.split("||");
       return { page, label, count };
@@ -416,7 +416,7 @@ export default function PlatformAnalyticsScreen({ onBack, currentUserEmail }: Pl
                       
                       {/* Interactive Bar Chart for Roles */}
                       <div className="bg-[#F5EDE0]/30 border border-[#E5DACB]/50 rounded-2xl p-4 space-y-3">
-                        {Object.entries(rolesCount).map(([role, count]) => {
+                        {(Object.entries(rolesCount) as [string, number][]).map(([role, count]) => {
                           const percentage = Math.round((count / totalEvents) * 100);
                           return (
                             <div key={role} className="flex justify-between items-center text-xs">

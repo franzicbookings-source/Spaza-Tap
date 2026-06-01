@@ -79,6 +79,7 @@ export interface ShopUpdate {
 }
 
 export interface Customer {
+  id?: string;
   name: string;
   initials: string;
   phone: string;

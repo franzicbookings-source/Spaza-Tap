@@ -6,7 +6,9 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  getRedirectResult,
+  signInWithRedirect
 } from "firebase/auth";
 import { 
   collection, 
@@ -65,33 +67,77 @@ import { calculateDaysOwingFrom, formatTxDate, computeStatus } from "./utils";
 import PlatformAnalyticsScreen from "./screens/PlatformAnalyticsScreen";
 import { telemetry } from "./lib/telemetry";
 
+// LocalStorage Constants
+const KEY_ACCOUNT = "spaza_tap_account";
+const KEY_ROLE = "spaza_tap_role";
+const KEY_CUSTOMER_ID = "spaza_tap_customer_id";
+const KEY_SHOP_DETAILS = "spaza_tap_shop_details";
+
+const OLD_KEY_ACCOUNT = "cwebezela_account";
+const OLD_KEY_ROLE = "cwebezela_role";
+const OLD_KEY_CUSTOMER_ID = "cwebezela_customer_id";
+const OLD_KEY_SHOP_DETAILS = "cwebezela_shop_details";
+
+// Migration layer helper function
+const getLocalStorageItem = (key: string, oldKey: string): string | null => {
+  const val = localStorage.getItem(key);
+  if (val !== null) return val;
+  // Fallback to old key if new key doesn't exist
+  const oldVal = localStorage.getItem(oldKey);
+  if (oldVal !== null) {
+    // Migrate to new key
+    localStorage.setItem(key, oldVal);
+    return oldVal;
+  }
+  return null;
+};
+
+// Set values wrapper
+const setLocalStorageItem = (key: string, oldKey: string, value: string) => {
+  localStorage.setItem(key, value);
+  localStorage.setItem(oldKey, value); // Keep mirror for safety
+};
+
+// Remove values wrapper
+const removeLocalStorageItems = () => {
+  localStorage.removeItem(KEY_ACCOUNT);
+  localStorage.removeItem(KEY_ROLE);
+  localStorage.removeItem(KEY_CUSTOMER_ID);
+  localStorage.removeItem(KEY_SHOP_DETAILS);
+  localStorage.removeItem(OLD_KEY_ACCOUNT);
+  localStorage.removeItem(OLD_KEY_ROLE);
+  localStorage.removeItem(OLD_KEY_CUSTOMER_ID);
+  localStorage.removeItem(OLD_KEY_SHOP_DETAILS);
+};
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>(() => {
-    const cachedRole = localStorage.getItem("cwebezela_role");
+    const cachedRole = getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE);
     if (cachedRole === "customer") return "customerDashboard";
-    return localStorage.getItem("cwebezela_account") ? "dashboard" : "welcome";
+    return getLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT) ? "dashboard" : "welcome";
   });
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   const [userRole, setUserRole] = useState<"shop_owner" | "customer" | null>(() => {
-    return (localStorage.getItem("cwebezela_role") as any) || null;
+    return (getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE) as any) || null;
   });
   const [myCustomerId, setMyCustomerId] = useState<string | null>(() => {
-    return localStorage.getItem("cwebezela_customer_id") || null;
+    return getLocalStorageItem(KEY_CUSTOMER_ID, OLD_KEY_CUSTOMER_ID) || null;
   });
   const [shopDetails, setShopDetails] = useState<{ shopName: string; phoneNumber: string; ownerName: string } | null>(() => {
-    const cached = localStorage.getItem("cwebezela_shop_details");
+    const cached = getLocalStorageItem(KEY_SHOP_DETAILS, OLD_KEY_SHOP_DETAILS);
     return cached ? JSON.parse(cached) : null;
   });
 
   const [isLoadingAuth, setIsLoadingAuth] = useState(() => {
-    const cachedAcc = localStorage.getItem("cwebezela_account");
-    const cachedRole = localStorage.getItem("cwebezela_role");
-    return !(cachedAcc || (cachedRole === "customer" && localStorage.getItem("cwebezela_customer_id")));
+    const cachedAcc = getLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT);
+    const cachedRole = getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE);
+    const cachedCustId = getLocalStorageItem(KEY_CUSTOMER_ID, OLD_KEY_CUSTOMER_ID);
+    return !(cachedAcc || (cachedRole === "customer" && cachedCustId));
   });
 
   const [currentAccount, setCurrentAccount] = useState<Account | null>(() => {
-    const cached = localStorage.getItem("cwebezela_account");
+    const cached = getLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT);
     return cached ? JSON.parse(cached) : null;
   });
 
@@ -171,7 +217,7 @@ export default function App() {
         const userData = userDoc.data();
         const role = userData.role || "shop_owner";
         setUserRole(role);
-        localStorage.setItem("cwebezela_role", role);
+        setLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE, role);
 
         if (role === "shop_owner") {
           if (userData.shopId) {
@@ -231,7 +277,7 @@ export default function App() {
                 mainProductsSold: shopData.mainProductsSold || "",
               };
               setCurrentAccount(accountData);
-              localStorage.setItem("cwebezela_account", JSON.stringify(accountData));
+              setLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT, JSON.stringify(accountData));
               setCurrentScreen(prev => (prev === "welcome" || prev === "customerDashboard" || prev === "customerRequestStatus" || prev === "customerJoin") ? "dashboard" : prev);
               return true;
             }
@@ -259,7 +305,7 @@ export default function App() {
 
           if (customerId) {
             setMyCustomerId(customerId);
-            localStorage.setItem("cwebezela_customer_id", customerId);
+            setLocalStorageItem(KEY_CUSTOMER_ID, OLD_KEY_CUSTOMER_ID, customerId);
             
             const customerDocRef = doc(db, "customers", customerId);
             const customerDoc = await getDoc(customerDocRef);
@@ -272,12 +318,12 @@ export default function App() {
               const sData = shopDoc.exists() ? shopDoc.data() : null;
 
               const shopInfo = {
-                shopName: sData ? sData.shopName : "Cwebezela Spaza",
+                shopName: sData ? sData.shopName : "Spaza Tap Shop",
                 phoneNumber: sData ? sData.phoneNumber || "" : "",
                 ownerName: sData ? sData.ownerName || "" : ""
               };
               setShopDetails(shopInfo);
-              localStorage.setItem("cwebezela_shop_details", JSON.stringify(shopInfo));
+              setLocalStorageItem(KEY_SHOP_DETAILS, OLD_KEY_SHOP_DETAILS, JSON.stringify(shopInfo));
 
               // Store shop details in account state too
               const accountData = {
@@ -290,7 +336,7 @@ export default function App() {
                 whatsappTemplate: ""
               };
               setCurrentAccount(accountData);
-              localStorage.setItem("cwebezela_account", JSON.stringify(accountData));
+              setLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT, JSON.stringify(accountData));
 
               setCurrentScreen("customerDashboard");
               return true;
@@ -310,15 +356,50 @@ export default function App() {
 
   // Auth Effect
   useEffect(() => {
+    // Handle redirect results
+    getRedirectResult(auth).then(async (cred) => {
+      if (cred && cred.user) {
+        const uid = cred.user.uid;
+        const email = cred.user.email || "";
+        const role = (localStorage.getItem("spaza_tap_auth_intent_role") || getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE) || "shop_owner") as "shop_owner" | "customer";
+        
+        const userDocRef = doc(db, "users", uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === role) {
+            await loadUserProfile(uid);
+          } else {
+            alert(`This account is already registered as a ${userData.role === 'customer' ? 'Customer' : 'Shop Owner'}. Please use the correct login.`);
+            await signOut(auth);
+          }
+        } else {
+          const recovery = await recoverOrLinkAccount(uid, email, role);
+          if (recovery.success) {
+            await loadUserProfile(uid);
+          } else {
+            alert(recovery.message || "Failed to link account");
+            await signOut(auth);
+          }
+        }
+      }
+    }).catch((e) => {
+      console.error("Redirect login result error:", e);
+      if (e.code === 'auth/unauthorized-domain') {
+        alert("This app domain is not authorised for Google sign-in yet. Please contact support.");
+      } else if (e.code === 'auth/account-exists-with-different-credential') {
+        alert("This email already exists with another sign-in method. Please log in using the original method.");
+      } else if (e.code === 'auth/network-request-failed') {
+        alert("Network error. Please check your internet connection.");
+      }
+    });
+
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Optimistic UI means we might already be on dashboard from cache
         await loadUserProfile(user.uid);
       } else {
-        localStorage.removeItem("cwebezela_account");
-        localStorage.removeItem("cwebezela_role");
-        localStorage.removeItem("cwebezela_customer_id");
-        localStorage.removeItem("cwebezela_shop_details");
+        removeLocalStorageItems();
         setUserRole(null);
         setMyCustomerId(null);
         setShopDetails(null);
@@ -725,12 +806,29 @@ export default function App() {
         return null;
       }
     } catch (e: any) {
-      console.error(e);
-      if (e.code === 'auth/popup-closed-by-user') {
-        return 'Sign-in cancelled. Please try again.';
+      console.error("Google popup sign-in failed, checking redirect fallback:", e);
+      // Fallback to Redirect Sign-In on mobile/iOS or if popups are explicitly blocked
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || /Android|iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent)) {
+        try {
+          localStorage.setItem("spaza_tap_auth_intent_role", role);
+          const provider = new GoogleAuthProvider();
+          await signInWithRedirect(auth, provider);
+          return null; // Redirect flow initiated
+        } catch (redirectErr: any) {
+          e = redirectErr;
+        }
       }
-      if (e.code === 'auth/cancelled-popup-request') {
-        return null; // Ignore if multiple popups requested
+      if (e.code === 'auth/unauthorized-domain') {
+        return "This app domain is not authorised for Google sign-in yet. Please contact support.";
+      }
+      if (e.code === 'auth/popup-closed-by-user') {
+        return "Sign-in cancelled. Please try again.";
+      }
+      if (e.code === 'auth/account-exists-with-different-credential') {
+        return "This email already exists with another sign-in method. Please log in using the original method.";
+      }
+      if (e.code === 'auth/network-request-failed') {
+        return "Network error. Please check your internet connection.";
       }
       return e.message || "Google authentication failed.";
     }
@@ -950,7 +1048,7 @@ export default function App() {
       
       // Load user profile
       setUserRole("customer");
-      localStorage.setItem("cwebezela_role", "customer");
+      setLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE, "customer");
       await loadUserProfile(uid);
       
       return null;
@@ -1006,7 +1104,7 @@ export default function App() {
     try {
       const namePart = (cData.name || "CUST").toUpperCase().replace(/[^A-Z]/g, "").substring(0, 3).padEnd(3, "X");
       const randPart = Math.floor(1000 + Math.random() * 9000);
-      const customerReferenceNumber = `CWE-${namePart}-${randPart}`;
+      const customerReferenceNumber = `SPT-${namePart}-${randPart}`;
 
       const customerId = "cust_" + Date.now();
       const customerRef = doc(db, "customers", customerId);
@@ -1233,7 +1331,7 @@ export default function App() {
       await batch.commit();
 
       setUserRole("customer");
-      localStorage.setItem("cwebezela_role", "customer");
+      setLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE, "customer");
       setScannedShopCode(null);
       setCurrentScreen("customerRequestStatus");
 
@@ -1496,7 +1594,7 @@ export default function App() {
           )}
           {currentScreen === "customerJoin" && (
             <CustomerJoinScreen
-              shopName={scannedShop?.shopName || "Cwebezela Spaza"}
+              shopName={scannedShop?.shopName || "Spaza Tap Shop"}
               shopId={scannedShop?.id || ""}
               onJoinRequest={handleJoinRequestSubmit}
               onBackToWelcome={() => {
@@ -1515,7 +1613,7 @@ export default function App() {
           )}
           {currentScreen === "shopQrCode" && (
             <ShopQrCodeScreen
-              shopName={currentAccount?.shopName || "Cwebezela Spaza"}
+              shopName={currentAccount?.shopName || "Spaza Tap Shop"}
               shopCode={currentAccount?.shopCode || ""}
               joinLink={currentAccount?.joinLink || ""}
               onBack={() => navigateTo("settings")}
@@ -1569,7 +1667,7 @@ export default function App() {
               onRecordPayment={handleRecordPayment}
               onUpdateCustomer={handleUpdateCustomer}
               whatsappTemplate={currentAccount?.whatsappTemplate || ""}
-              shopName={currentAccount?.shopName || "Cwebezela Spaza"}
+              shopName={currentAccount?.shopName || "Spaza Tap Shop"}
             />
           )}
           {currentScreen === "addCredit" && (
