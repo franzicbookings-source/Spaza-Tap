@@ -1,0 +1,249 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Helper: Validates Document ID pattern and length. Note we only allow standard IDs.
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    //
+    // USER
+    //
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && (!('ownerName' in data) || (data.ownerName is string && data.ownerName.size() <= 128))
+        && (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 32))
+        && (!('shopId' in data) || (data.shopId is string && data.shopId.size() <= 128));
+    }
+
+    match /users/{userId} {
+      allow create: if isAuthenticated() 
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt'])
+        && incoming().keys().size() <= 7
+        && isValidUser(incoming());
+        
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      
+      allow update: if isAuthenticated() 
+        && request.auth.uid == userId
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['ownerName', 'phoneNumber', 'shopId', 'updatedAt'])
+        && isValidUser(incoming());
+        
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    //
+    // SHOP
+    //
+    function isValidShop(data) {
+      return data.keys().hasAll(['id', 'ownerUserId', 'shopName', 'ownerName', 'defaultCreditLimit', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.ownerUserId is string && data.ownerUserId.size() <= 128
+        && data.shopName is string && data.shopName.size() <= 128
+        && data.ownerName is string && data.ownerName.size() <= 128
+        && (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 32))
+        && data.defaultCreditLimit is number && data.defaultCreditLimit >= 0
+        && (!('reminderTemplate' in data) || (data.reminderTemplate is string && data.reminderTemplate.size() <= 1000));
+    }
+
+    match /shops/{shopId} {
+      allow create: if isAuthenticated()
+        && isValidId(shopId)
+        && incoming().ownerUserId == request.auth.uid
+        && incoming().id == shopId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().keys().hasAll(['id', 'ownerUserId', 'shopName', 'ownerName', 'defaultCreditLimit', 'createdAt', 'updatedAt'])
+        && incoming().keys().size() <= 9
+        && isValidShop(incoming());
+        
+      allow read: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow list: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      
+      allow update: if isAuthenticated()
+        && existing().ownerUserId == request.auth.uid
+        && incoming().ownerUserId == existing().ownerUserId
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['shopName', 'ownerName', 'phoneNumber', 'defaultCreditLimit', 'reminderTemplate', 'updatedAt'])
+        && isValidShop(incoming());
+    }
+
+    //
+    // CUSTOMER
+    //
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['id', 'shopId', 'ownerUserId', 'name', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.shopId is string && data.shopId.size() <= 128
+        && data.ownerUserId is string && data.ownerUserId.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 32))
+        && (!('areaOrAddress' in data) || (data.areaOrAddress is string && data.areaOrAddress.size() <= 512))
+        && (!('creditLimit' in data) || (data.creditLimit is number && data.creditLimit >= 0))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    match /customers/{customerId} {
+      allow create: if isAuthenticated()
+        && isValidId(customerId)
+        && incoming().ownerUserId == request.auth.uid
+        && incoming().id == customerId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().keys().hasAll(['id', 'shopId', 'ownerUserId', 'name', 'createdAt', 'updatedAt'])
+        && incoming().keys().size() <= 10
+        && isValidCustomer(incoming());
+        
+      allow read: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow list: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      
+      allow update: if isAuthenticated()
+        && existing().ownerUserId == request.auth.uid
+        && incoming().ownerUserId == existing().ownerUserId
+        && incoming().id == existing().id
+        && incoming().shopId == existing().shopId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phoneNumber', 'areaOrAddress', 'creditLimit', 'notes', 'updatedAt'])
+        && isValidCustomer(incoming());
+        
+      allow delete: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+    }
+
+    //
+    // CREDIT ENTRY
+    //
+    function isValidCreditEntry(data) {
+      return data.keys().hasAll(['id', 'shopId', 'ownerUserId', 'customerId', 'amount', 'amountPaid', 'balance', 'creditDate', 'status', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.shopId is string && data.shopId.size() <= 128
+        && data.ownerUserId is string && data.ownerUserId.size() <= 128
+        && data.customerId is string && data.customerId.size() <= 128
+        && data.amount is number && data.amount >= 0
+        && data.amountPaid is number && data.amountPaid >= 0 && data.amountPaid <= data.amount
+        && data.balance is number && data.balance >= 0 && data.balance <= data.amount
+        && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
+        && data.creditDate is string && data.creditDate.size() <= 64 // Using string for date format simplicity, can adjust
+        && data.status is string && (data.status == 'unpaid' || data.status == 'partially_paid' || data.status == 'paid');
+    }
+
+    match /credit_entries/{entryId} {
+      allow create: if isAuthenticated()
+        && isValidId(entryId)
+        && incoming().ownerUserId == request.auth.uid
+        && incoming().id == entryId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().keys().hasAll(['id', 'shopId', 'ownerUserId', 'customerId', 'amount', 'amountPaid', 'balance', 'creditDate', 'status', 'createdAt', 'updatedAt'])
+        && incoming().keys().size() <= 12
+        && isValidCreditEntry(incoming());
+        
+      allow read: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow list: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      
+      allow update: if isAuthenticated()
+        && existing().ownerUserId == request.auth.uid
+        && incoming().ownerUserId == existing().ownerUserId
+        && incoming().id == existing().id
+        && incoming().shopId == existing().shopId
+        && incoming().customerId == existing().customerId
+        && incoming().amount == existing().amount
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['amountPaid', 'balance', 'status', 'updatedAt'])
+        && isValidCreditEntry(incoming());
+        
+      allow delete: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+    }
+
+    //
+    // PAYMENT
+    //
+    function isValidPayment(data) {
+      return data.keys().hasAll(['id', 'shopId', 'ownerUserId', 'customerId', 'amount', 'paymentDate', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.shopId is string && data.shopId.size() <= 128
+        && data.ownerUserId is string && data.ownerUserId.size() <= 128
+        && data.customerId is string && data.customerId.size() <= 128
+        && data.amount is number && data.amount > 0
+        && data.paymentDate is string && data.paymentDate.size() <= 64
+        && (!('note' in data) || (data.note is string && data.note.size() <= 1000));
+    }
+
+    match /payments/{paymentId} {
+      allow create: if isAuthenticated()
+        && isValidId(paymentId)
+        && incoming().ownerUserId == request.auth.uid
+        && incoming().id == paymentId
+        && incoming().createdAt == request.time
+        && incoming().keys().hasAll(['id', 'shopId', 'ownerUserId', 'customerId', 'amount', 'paymentDate', 'createdAt'])
+        && incoming().keys().size() <= 8
+        && isValidPayment(incoming());
+        
+      allow read: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow list: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow update: if false; // Payments should not be updated
+      allow delete: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+    }
+
+    //
+    // TRANSACTION
+    //
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'shopId', 'ownerUserId', 'customerId', 'type', 'amount', 'transactionDate', 'balanceAfterTransaction', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.shopId is string && data.shopId.size() <= 128
+        && data.ownerUserId is string && data.ownerUserId.size() <= 128
+        && data.customerId is string && data.customerId.size() <= 128
+        && data.type is string && (data.type == 'credit' || data.type == 'payment')
+        && data.amount is number && data.amount > 0
+        && data.balanceAfterTransaction is number && data.balanceAfterTransaction >= 0
+        && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
+        && data.transactionDate is string && data.transactionDate.size() <= 64;
+    }
+
+    match /transactions/{txnId} {
+      allow create: if isAuthenticated()
+        && isValidId(txnId)
+        && incoming().ownerUserId == request.auth.uid
+        && incoming().id == txnId
+        && incoming().createdAt == request.time
+        && incoming().keys().hasAll(['id', 'shopId', 'ownerUserId', 'customerId', 'type', 'amount', 'transactionDate', 'balanceAfterTransaction', 'createdAt'])
+        && incoming().keys().size() <= 10
+        && isValidTransaction(incoming());
+        
+      allow read: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow list: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+      allow update: if false; // Transactions are immutable ledger entries
+      allow delete: if isAuthenticated() && existing().ownerUserId == request.auth.uid;
+    }
+  }
+}

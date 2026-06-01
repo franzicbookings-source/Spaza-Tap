@@ -1,0 +1,205 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Store user profile data (shop owner or customer) connected to Firebase Auth.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "role": { "type": "string", "enum": ["shop_owner", "customer"] },
+        "shopId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["uid", "email", "role", "createdAt", "updatedAt"]
+    },
+    "Shop": {
+      "title": "Shop",
+      "description": "Shop data belonging to one logged-in Firebase user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "shopName": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "defaultCreditLimit": { "type": "number" },
+        "reminderTemplate": { "type": "string" },
+        "shopCode": { "type": "string" },
+        "joinLink": { "type": "string" },
+        "qrCodeUrl": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["id", "ownerUserId", "shopName", "ownerName", "defaultCreditLimit", "createdAt", "updatedAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer belonging to one shop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "linkedCustomerUserId": { "type": "string" },
+        "customerReferenceNumber": { "type": "string" },
+        "name": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "areaOrAddress": { "type": "string" },
+        "creditLimit": { "type": "number" },
+        "creditStatus": { "type": "string", "enum": ["active", "paused"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["id", "shopId", "ownerUserId", "name", "customerReferenceNumber", "creditStatus", "createdAt", "updatedAt"]
+    },
+    "CreditEntry": {
+      "title": "Credit Entry",
+      "description": "A record of credit given to a customer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "amountPaid": { "type": "number" },
+        "balance": { "type": "number" },
+        "description": { "type": "string" },
+        "creditDate": { "type": "object" },
+        "status": { "type": "string", "enum": ["unpaid", "partially_paid", "paid"] },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["id", "shopId", "ownerUserId", "customerId", "amount", "amountPaid", "balance", "creditDate", "status", "createdAt", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "A payment made by a customer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentDate": { "type": "object" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["id", "shopId", "ownerUserId", "customerId", "amount", "paymentDate", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A ledger history of transactions (credit or payment) for a customer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "type": { "type": "string", "enum": ["credit", "payment"] },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "transactionDate": { "type": "object" },
+        "balanceAfterTransaction": { "type": "number" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["id", "shopId", "ownerUserId", "customerId", "type", "amount", "transactionDate", "balanceAfterTransaction", "createdAt"]
+    },
+    "CustomerAccessRequest": {
+      "title": "Customer Access Request",
+      "description": "A request created by a customer to join a shop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "shopOwnerUserId": { "type": "string" },
+        "customerUserId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhoneNumber": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "linkedCustomerId": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["id", "shopId", "shopOwnerUserId", "customerUserId", "customerName", "customerPhoneNumber", "customerEmail", "status", "createdAt", "updatedAt"]
+    },
+    "WholesalePrice": {
+      "title": "Wholesale Price",
+      "description": "Observed wholesale price of a bulk item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "price": { "type": "number" },
+        "unit": { "type": "string" },
+        "dateObserved": { "type": "string" }
+      },
+      "required": ["id", "shopId", "ownerUserId", "itemName", "supplierName", "price"]
+    },
+    "ShopDocument": {
+      "title": "Shop Document",
+      "description": "Documents uploaded/managed by the shop owner for compliance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["id", "shopId", "ownerUserId", "name", "category", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/shops/{shopId}": {
+      "schema": { "$ref": "#/entities/Shop" },
+      "description": "Stores shop profiles."
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Stores customer profiles."
+    },
+    "/credit_entries/{creditEntryId}": {
+      "schema": { "$ref": "#/entities/CreditEntry" },
+      "description": "Stores credit log."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Stores payments."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Stores transactions history."
+    },
+    "/customer_access_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/CustomerAccessRequest" },
+      "description": "Stores customer access requests for shops."
+    },
+    "/wholesale_prices/{priceId}": {
+      "schema": { "$ref": "#/entities/WholesalePrice" },
+      "description": "Stores observed wholesale prices."
+    },
+    "/shop_documents/{docId}": {
+      "schema": { "$ref": "#/entities/ShopDocument" },
+      "description": "Stores shop documents metadata."
+    }
+  }
+}

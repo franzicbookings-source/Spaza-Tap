@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cwebezela Tab</string>
+    <string name="title_activity_main">Cwebezela Tab</string>
+    <string name="package_name">com.cwebezela.tab</string>
+    <string name="custom_url_scheme">com.cwebezela.tab</string>
+</resources>

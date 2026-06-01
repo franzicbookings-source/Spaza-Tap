@@ -1,0 +1,8 @@
+{
+  "name": "Cwebezela Tab",
+  "description": "A spaza shop ledger app for tracking customer credit and access requests.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
