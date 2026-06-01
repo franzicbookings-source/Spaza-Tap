@@ -874,9 +874,15 @@ export default function App() {
         return null;
       }
     } catch (e: any) {
-      console.error("Google popup sign-in failed, checking redirect fallback:", e);
-      // Fallback to Redirect Sign-In on mobile/iOS or if popups are explicitly blocked
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || /Android|iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent)) {
+      console.warn("Google popup sign-in failed, checking redirect fallback:", e);
+      // Fallback to Redirect Sign-In on mobile/iOS, if popups are blocked/cancelled/closed, or when running inside an iframe
+      if (
+        e.code === 'auth/popup-blocked' || 
+        e.code === 'auth/cancelled-popup-request' || 
+        e.code === 'auth/popup-closed-by-user' ||
+        window.self !== window.top ||
+        /Android|iPhone|iPad|iPod|Macintosh|Windows|Linux/i.test(navigator.userAgent)
+      ) {
         try {
           localStorage.setItem("spaza_tap_auth_intent_role", role);
           localStorage.setItem("spaza_tap_auth_intent_mode", mode);

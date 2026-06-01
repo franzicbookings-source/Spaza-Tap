@@ -117,12 +117,14 @@ export default function DashboardScreen({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             {/* Logo Shop Mark */}
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
+              <span className="absolute font-black text-[10px] text-[#3B1A1A] leading-tight text-center">Spaza<br/>Tap</span>
               <img 
-                src="/logo.png" 
-                alt="Spaza Tap Logo" 
-                className="w-full h-full object-contain"
+                src="/icons/spaza-tap-logo.png" 
+                alt="" 
+                className="w-full h-full object-contain relative z-10"
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
             <div>

@@ -47,12 +47,14 @@ export default function DesktopSidebar({ currentScreen, onNavigate, onLogout, sh
       <div>
         <div className="p-6 pb-8 border-b border-white/10">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
+              <span className="absolute font-black text-[8px] text-[#F5EDE0] leading-tight text-center">ST</span>
               <img 
-                src="/logo.png" 
-                alt="Spaza Tap Logo" 
-                className="w-full h-full object-contain"
+                src="/icons/spaza-tap-logo.png" 
+                alt="" 
+                className="w-full h-full object-contain relative z-10"
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
             <span className="font-display font-black text-xl tracking-tight leading-none uppercase">Spaza Tap</span>

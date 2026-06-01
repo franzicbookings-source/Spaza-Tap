@@ -76,12 +76,14 @@ export default function CustomerJoinScreen({
           
           {/* Shop Context logo */}
           <div className="flex items-center gap-3.5 mb-6 pb-4.5 border-b border-text-main/5">
-            <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-transparent shrink-0">
+            <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
+              <span className="absolute font-black text-xs text-[#3B1A1A] leading-tight text-center">Spaza<br/>Tap</span>
               <img 
-                src="/logo.png" 
-                alt="Spaza Tap Logo" 
-                className="w-full h-full object-contain"
+                src="/icons/spaza-tap-logo.png" 
+                alt="" 
+                className="w-full h-full object-contain relative z-10 bg-white"
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
             <div className="min-w-0">

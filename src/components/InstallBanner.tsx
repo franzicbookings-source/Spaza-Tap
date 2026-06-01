@@ -37,10 +37,19 @@ export function InstallBanner() {
         window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true;
 
-      const dismissed = localStorage.getItem("spaza_tap_install_dismissed") || localStorage.getItem("installBannerDismissed");
       const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
+      
+      const dismissedUntil = localStorage.getItem("spaza_tap_install_dismissed_until");
+      let isDismissed = false;
+      if (dismissedUntil) {
+        if (Date.now() < parseInt(dismissedUntil, 10)) {
+          isDismissed = true;
+        } else {
+          localStorage.removeItem("spaza_tap_install_dismissed_until");
+        }
+      }
 
-      if (isStandalone || dismissed === "true" || appInstalled === "true") {
+      if (isStandalone || isDismissed || appInstalled === "true") {
         setIsVisible(false);
       } else {
         setIsVisible(true);
@@ -53,13 +62,18 @@ export function InstallBanner() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      const dismissed = localStorage.getItem("spaza_tap_install_dismissed") || localStorage.getItem("installBannerDismissed");
+      const dismissedUntil = localStorage.getItem("spaza_tap_install_dismissed_until");
+      let isDismissed = false;
+      if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
+        isDismissed = true;
+      }
+      
       const appInstalled = localStorage.getItem("spaza_tap_app_installed") || localStorage.getItem("appInstalled");
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true;
 
-      if (!isStandalone && dismissed !== "true" && appInstalled !== "true") {
+      if (!isStandalone && !isDismissed && appInstalled !== "true") {
         setIsVisible(true);
       }
     };
@@ -71,6 +85,7 @@ export function InstallBanner() {
 
     // Listen to manual reset signal from Settings Screen
     const handleResetSignal = () => {
+      localStorage.removeItem("spaza_tap_install_dismissed_until");
       localStorage.removeItem("spaza_tap_install_dismissed");
       localStorage.removeItem("spaza_tap_app_installed");
       localStorage.removeItem("installBannerDismissed");
@@ -106,47 +121,66 @@ export function InstallBanner() {
 
   const handleClose = () => {
     setIsVisible(false);
-    localStorage.setItem("spaza_tap_install_dismissed", "true");
-    localStorage.setItem("installBannerDismissed", "true");
+    // Hide for 24 hours
+    const hideUntil = Date.now() + 24 * 60 * 60 * 1000;
+    localStorage.setItem("spaza_tap_install_dismissed_until", hideUntil.toString());
   };
 
   if (!isVisible) return null;
 
   return (
     <>
-      {/* Visual Elegant Floating Banner at the bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in pointer-events-none flex justify-center">
-        <div className="w-full max-w-md bg-[#3B1A1A] text-[#FDFBF7] shadow-xl p-4 rounded-2xl border border-primary/20 pointer-events-auto flex items-center justify-between gap-3 md:mb-4">
-          <div className="flex items-center gap-3">
+      <div 
+        className="fixed z-60 animate-fade-in flex items-center justify-between"
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+          left: '12px',
+          right: '12px',
+          width: 'auto',
+          maxWidth: '406px',
+          margin: '0 auto',
+          background: '#3B1A1A',
+          color: 'white',
+          borderRadius: '18px',
+          padding: '12px',
+          gap: '10px'
+        }}
+      >
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden border border-[#C8521A]/20 shadow-md bg-white flex items-center justify-center relative">
+            <span className="text-[#3B1A1A] font-bold text-lg absolute">ST</span>
             <img 
               src="/icons/icon-192x192.png" 
-              alt="Spaza Tap Logo" 
-              className="w-12 h-12 rounded-xl border border-[#C8521A]/20 shadow-md shrink-0 object-cover" 
+              alt="" 
+              className="w-full h-full object-cover relative z-10"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }} 
             />
-            <div className="flex flex-col min-w-0">
-              <strong className="text-sm font-extrabold tracking-tight">Spaza Tap App</strong>
-              <span className="text-[10px] text-gray-300 font-bold leading-snug">
-                Install on your Home Screen for offline credit and ledger.
-              </span>
-            </div>
           </div>
+          <div className="flex flex-col min-w-0">
+            <strong className="text-sm font-extrabold tracking-tight whitespace-nowrap">Install Spaza Tap</strong>
+            <span className="text-[10px] text-gray-300 leading-snug hidden sm:block truncate pr-2">
+              Add the app to your home screen.
+            </span>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button 
-              onClick={handleInstallClick}
-              className="bg-[#C8521A] hover:bg-[#B04112] text-white text-[11px] font-black px-3.5 py-2.5 rounded-xl uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer shadow-md"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Install</span>
-            </button>
-            <button 
-              onClick={handleClose} 
-              className="p-1 text-gray-400 hover:text-white rounded-full bg-white/10 active:scale-90 transition-transform cursor-pointer"
-              aria-label="Dismiss banner"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button 
+            onClick={handleInstallClick}
+            className="bg-[#C8521A] hover:bg-[#B04112] text-white text-[11px] font-black px-3.5 py-2.5 rounded-xl uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer shadow-md"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Install</span>
+          </button>
+          <button 
+            onClick={handleClose} 
+            className="p-1 text-gray-400 hover:text-white rounded-full bg-white/10 active:scale-90 transition-transform cursor-pointer shrink-0"
+            aria-label="Dismiss banner"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
