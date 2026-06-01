@@ -5,53 +5,25 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
   
-  --color-surface: #faeedb;
-  --color-surface-dim: #f3dfc8;
-  --color-surface-bright: #ffffff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f9ede0;
-  --color-surface-container: #faeedb;
-  --color-surface-container-high: #f2e3cc;
-  --color-surface-container-highest: #eacfb4;
-  --color-on-surface: #421B13;
-  --color-on-surface-variant: #6E463B;
-  --color-inverse-surface: #421B13;
-  --color-inverse-on-surface: #faeedb;
-  --color-outline: #D4B29A;
-  --color-outline-variant: #E8D0BB;
-  --color-surface-tint: #DF5421;
-  --color-primary: #DF5421;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #FFE5D8;
-  --color-on-primary-container: #4D1A06;
-  --color-inverse-primary: #FFB599;
-  --color-secondary: #921E14;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #FFDAD4;
-  --color-on-secondary-container: #410000;
-  --color-tertiary: #196D31;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #A7F5B6;
-  --color-on-tertiary-container: #00210A;
-  --color-error: #BA1A1A;
-  --color-on-error: #ffffff;
-  --color-error-container: #FFDAD6;
-  --color-on-error-container: #410002;
-  --color-primary-fixed: #FFE5D8;
-  --color-primary-fixed-dim: #99c2ff;
-  --color-on-primary-fixed: #002244;
-  --color-on-primary-fixed-variant: #003366;
-  --color-secondary-fixed: #a7f3d0;
-  --color-secondary-fixed-dim: #6ee7b7;
-  --color-on-secondary-fixed: #064e3b;
-  --color-on-secondary-fixed-variant: #047857;
-  --color-tertiary-fixed: #fde68a;
-  --color-tertiary-fixed-dim: #fcd34d;
-  --color-on-tertiary-fixed: #78350f;
-  --color-on-tertiary-fixed-variant: #b45309;
-  --color-background: #f0f2f5;
-  --color-on-background: #111827;
-  --color-surface-variant: #f0f2f5;
+  --color-background: #FBF5EC;
+  --color-bg-soft: #FFF9F2;
+  --color-card-bg: #FFFFFF;
+  --color-card-soft: #FFF7EF;
+  --color-text-main: #2B1114;
+  --color-text-muted: #756766;
+  --color-text-light: #9B8F8D;
+  --color-primary: #D94F12;
+  --color-primary-dark: #B83E0B;
+  --color-primary-soft: #FFF0E7;
+  --color-burgundy: #321316;
+  --color-burgundy-soft: #4A2025;
+  --color-success: #168A45;
+  --color-success-bg: #EAF8EF;
+  --color-warning: #C88200;
+  --color-warning-bg: #FFF4D8;
+  --color-danger: #C9312C;
+  --color-danger-bg: #FFE9E8;
+  --color-neutral-bg: #F1EBE4;
 
   --spacing-safe-margin: 16px;
   --spacing-xs: 4px;
@@ -62,10 +34,28 @@
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-on-background);
+  background-color: #E5DACB;
+  color: #2B1114;
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: #FBF5EC;
+  color: #2B1114;
+  box-shadow: 0 12px 40px rgba(43, 17, 20, 0.12);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .install-banner {

@@ -4,7 +4,12 @@ import {
   UserPlus,
   Smile,
   QrCode,
-  X
+  X,
+  Phone,
+  Shield,
+  CreditCard,
+  Hash,
+  Activity
 } from "lucide-react";
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { ScreenState, Customer } from "../types";
@@ -44,7 +49,6 @@ export default function CustomersScreen({
   };
 
   const filteredCustomers = customers.filter((customer) => {
-    // Search query filter: by name, phone, address, or ref number
     const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           customer.phone.includes(searchQuery) ||
                           (customer.area && customer.area.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -58,6 +62,7 @@ export default function CustomersScreen({
     return true;
   });
 
+  const totalOwing = customers.reduce((acc, c) => acc + c.owed, 0);
   const totalOverdueCount = customers.filter(c => c.owed > 0 && c.daysOwing >= 15).length;
 
   const handleScan = (detectedCodes: any[]) => {
@@ -74,58 +79,61 @@ export default function CustomersScreen({
           setScanError("Customer not found in your database.");
         }
       } else {
-        setScanError("Invalid QR Code FORMAT. Not a Cwebezela customer ID.");
+        setScanError("Invalid QR Code FORMAT.");
       }
     }
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5EDE0] pb-28">
-      <header className="w-full pt-12 pb-4 px-6 relative">
-        <div className="max-w-[480px] md:max-w-[640px] lg:max-w-4xl mx-auto flex items-end justify-between">
+    <div className="w-full min-h-screen bg-[#FBF5EC] pb-32">
+      
+      {/* Header with detailed dynamic metrics */}
+      <header className="w-full pt-6 pb-4 px-5 bg-white border-b border-[#2B1114]/8">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[26px] md:text-3xl lg:text-4xl font-display font-black text-[#3B1A1A] leading-none uppercase tracking-tighter w-full mb-1 lg:mb-2">
+            <h1 className="text-[22px] font-black text-text-main font-display tracking-tight uppercase leading-none">
               Your Customers
             </h1>
-            <p className="text-xs lg:text-sm font-bold text-[#6E463B]">
-              {customers.length} {customers.length === 1 ? "customer" : "customers"} &mdash; {totalOverdueCount} overdue
+            <p className="text-xs font-bold text-text-light mt-1.5 leading-none">
+              {customers.length} total · {totalOverdueCount} overdue · R{totalOwing.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} outstanding
             </p>
           </div>
           <button 
             onClick={() => { setShowScanner(true); setScanError(""); }}
-            className="w-10 h-10 lg:w-12 lg:h-12 bg-[#3B1A1A] text-[#F5EDE0] rounded-full flex items-center justify-center active:scale-95 transition-transform shrink-0 shadow-md"
+            className="p-3 bg-[#FFF0E7] text-[#D94F12] border border-primary/20 rounded-full flex items-center justify-center active:scale-95 transition-transform shrink-0"
           >
-            <QrCode className="w-5 h-5 lg:w-6 lg:h-6" />
+            <QrCode className="w-5 h-5" />
           </button>
         </div>
       </header>
 
-      <main className="max-w-[480px] md:max-w-[640px] lg:max-w-4xl mx-auto px-6">
-        {/* Search */}
-        <div className="relative mb-6 lg:mb-8">
-          <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-[#3B1A1A] w-5 h-5 lg:w-6 lg:h-6" />
+      <main className="px-5 mt-5">
+        
+        {/* Search Bar - styled exactly per rules */}
+        <div className="relative mb-5 bg-white rounded-[18px] border border-text-main/10 h-14 flex items-center px-4.5 shadow-xs">
+          <Search className="text-text-muted w-5 h-5 shrink-0 select-none mr-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, ref#..."
-            className="w-full pl-8 lg:pl-10 pr-4 py-3 lg:py-4 bg-transparent border-b-2 border-[#3B1A1A]/30 text-[#3B1A1A] text-base lg:text-lg font-bold outline-none focus:border-[#3B1A1A] transition-all placeholder:text-[#3B1A1A]/50"
+            placeholder="Search by name, phone or reference..."
+            className="w-full bg-transparent text-text-main text-sm font-semibold outline-none placeholder:text-text-muted"
           />
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 lg:mb-8 no-scrollbar">
+        {/* Filter Choice Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar">
           {filterTabs.map((tab) => {
             const isActive = activeFilter === tab;
             return (
               <button
                 key={tab}
                 onClick={() => setActiveFilter(tab)}
-                className={`flex-shrink-0 px-4 py-2 lg:px-6 lg:py-2.5 rounded-full text-xs lg:text-sm font-display font-bold uppercase tracking-wider transition-all border
+                className={`flex-shrink-0 px-4.5 h-10 rounded-full text-xs font-bold uppercase tracking-wider transition-all border shrink-0
                   ${
                     isActive
-                      ? "bg-[#C8521A] text-white border-[#C8521A] shadow-sm"
-                      : "bg-[#E5DACB] text-[#3B1A1A] border-[#3B1A1A]/10 hover:bg-[#D9CEBF]"
+                      ? "bg-[#D94F12] text-white border-[#D94F12] shadow-xs"
+                      : "bg-[#EFE8DD] text-text-main border-text-main/5 hover:bg-[#E5DACB]"
                   }
                 `}
               >
@@ -135,69 +143,99 @@ export default function CustomersScreen({
           })}
         </div>
 
-        {/* Customer List / Empty States */}
+        {/* Customer Listing with 2-Column Desktop Grid and Detailed Stacked Cards */}
         {customers.length === 0 ? (
-          <div className="text-center py-12 px-4 bg-[#f9ede0] border-2 border-[#E5DACB] rounded-3xl lg:py-20 lg:rounded-[36px]">
-            <Smile className="w-10 h-10 lg:w-16 lg:h-16 text-[#C8521A] mx-auto mb-3 lg:mb-5" />
-            <p className="text-sm lg:text-base font-bold text-[#3B1A1A]">
-              No customers added yet. Add your first customer to start tracking.
+          <div className="text-center py-14 px-5 bg-white border border-[#2B1114]/8 rounded-[24px]">
+            <Smile className="w-10 h-10 text-primary mx-auto mb-3" />
+            <p className="text-xs font-bold text-text-main">
+              No customers added yet. Click "+ Add Customer" below!
             </p>
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="text-center py-12 px-4 bg-[#f9ede0] border-2 border-[#E5DACB] rounded-3xl lg:py-20 lg:rounded-[36px]">
-            <p className="text-sm lg:text-base font-bold text-[#6E463B]">
-              No customers found. Try searching for something else.
+          <div className="text-center py-14 px-5 bg-white border border-[#2B1114]/8 rounded-[24px]">
+            <p className="text-xs font-bold text-text-light">
+              No customers matched your search query.
             </p>
           </div>
         ) : (
-          <div className="space-y-4 md:grid md:grid-cols-2 md:space-y-0 md:gap-4 lg:gap-6">
+          <div className="space-y-3.5">
             {filteredCustomers.map((customer) => {
               const badge = getBadgeInfo(customer);
+              const customLimit = customer.limit || 2000;
+              const creditLeft = Math.max(0, customLimit - customer.owed);
               
-              let daysText = "";
-              if (customer.owed === 0 || customer.status === "settled") {
-                daysText = "Paid Up";
-              } else if (customer.daysOwing > 30) {
-                daysText = `${customer.daysOwing} days - Seriously overdue`;
-              } else {
-                daysText = `${customer.daysOwing} days owing`;
-              }
-
               return (
                 <div
                   key={customer.id}
-                  onClick={() => onViewCustomer(customer.id)}
-                  className="bg-[#f9ede0] border-2 border-[#E5DACB] p-5 rounded-3xl flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer shadow-sm relative overflow-hidden"
+                  onClick={() => onViewCustomer(customer!.id || "")}
+                  className="bg-white border border-[#2B1114]/8 p-4 rounded-[24px] cursor-pointer hover:border-[#D94F12]/30 active:scale-[0.99] transition-all shadow-xs relative overflow-hidden"
                 >
-                  <div className="flex items-start gap-4 w-full">
-                    <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-display font-black text-lg shrink-0 bg-[#C8521A]/10 text-[#C8521A] border-2 border-[#C8521A]/20">
+                  {/* Top row with initial, name details and owed money */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center font-display font-black text-sm shrink-0 bg-[#FFF0E7] text-[#D94F12] border border-primary/20">
                       {customer.photoUrl ? (
                         <img src={customer.photoUrl} alt={customer.name} className="w-full h-full object-cover" />
                       ) : (
-                        customer.initials
+                        customer.initials || "C"
                       )}
                     </div>
+                    
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <h3 className="text-base font-display font-black text-[#3B1A1A] tracking-tighter uppercase leading-none truncate">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <h3 className="text-sm font-extrabold text-text-main truncate uppercase leading-none">
                           {customer.name}
                         </h3>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${badge.bg}`}>
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${badge.bg}`}>
                           {badge.text}
                         </span>
                       </div>
-                      <p className="text-xs font-bold text-[#6E463B] mb-2">{customer.phone || "No phone number"}</p>
-                      <div className="flex items-baseline gap-1.5 pt-1 border-t border-[#3B1A1A]/5">
-                        <span className="text-sm font-display font-black text-[#C8521A]">
-                          R{customer.owed.toFixed(2)}
-                        </span>
-                        <span 
-                          className="text-[11px] font-bold text-[#6E463B]"
-                          dangerouslySetInnerHTML={{ __html: `&mdash; ${daysText}` }}
-                        />
+                      
+                      <div className="flex items-center gap-1 mt-1 text-[10px] font-semibold text-text-light leading-none">
+                        <Phone className="w-3 h-3 text-text-muted" />
+                        <span>{customer.phone || "No phone indicator"}</span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Mid Separator and visual outstanding ledger status */}
+                  <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-text-main/5">
+                    <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block">Owed Amount</span>
+                    <span className={`text-base font-black ${customer.owed > 0 ? "text-[#C9312C]" : "text-emerald-600"}`}>
+                      R{customer.owed.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* High Fidelity Detailed Bottom Grid - specified per list rules */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 mt-3 pt-3.5 border-t border-text-main/5 text-[11px] font-semibold text-text-light">
+                    
+                    <div>
+                      <span className="text-[9px] text-text-muted uppercase tracking-wider block mb-0.5">Credit Limit</span>
+                      <span className="font-extrabold text-[#2B1114]">R{customLimit.toFixed(2)}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-text-muted uppercase tracking-wider block mb-0.5">Credit Left</span>
+                      <span className={`font-extrabold ${creditLeft <= 150 ? "text-danger" : "text-emerald-600"}`}>
+                        R{creditLeft.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-text-muted uppercase tracking-wider block mb-0.5">Days Owing</span>
+                      <span className="font-extrabold text-[#2B1114]">
+                        {customer.owed > 0 ? `${customer.daysOwing} Days` : "Paid Up"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-text-muted uppercase tracking-wider block mb-0.5">Doc Ref</span>
+                      <span className="font-extrabold text-[#2B1114] font-mono tracking-wider">
+                        {customer.customerReferenceNumber || "No Ref"}
+                      </span>
+                    </div>
+
+                  </div>
+
                 </div>
               );
             })}
@@ -205,31 +243,31 @@ export default function CustomersScreen({
         )}
       </main>
 
-      {/* Floating Add Customer Button with full exact label */}
+      {/* Floating Add Customer Button - exact styling details */}
       <button
         onClick={() => onNavigate("newCustomer")}
-        className="fixed right-6 bottom-[100px] z-50 px-6 h-14 bg-[#3B1A1A] text-[#F5EDE0] rounded-full shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-[#4d2323]"
+        className="fixed right-5 bottom-[96px] z-45 px-5.5 h-14 bg-[#D94F12] text-white rounded-full shadow-[0_8px_24px_rgba(217,79,18,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all text-xs font-bold uppercase tracking-wider"
       >
-        <UserPlus className="w-5 h-5" />
-        <span className="font-display font-bold text-xs uppercase tracking-wider">+ Add Customer</span>
+        <UserPlus className="w-5 h-5 stroke-[2.5]" />
+        <span>+ Add Customer</span>
       </button>
 
-      {/* QR Scanner Modal */}
+      {/* QR Scanner Modal markup */}
       {showScanner && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm flex-col">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-5 bg-black/80 backdrop-blur-xs flex-col">
           <div className="bg-white rounded-3xl max-w-[360px] w-full p-4 relative overflow-hidden flex flex-col items-center">
             <button
               onClick={() => setShowScanner(false)}
-              className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-[#F5EDE0] text-[#3B1A1A] rounded-full z-[70] active:scale-95 transition-transform"
+              className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-[#FBF5EC] text-text-main rounded-full z-[70] active:scale-95 transition-transform"
             >
               <X className="w-4 h-4" />
             </button>
             <div className="w-full text-center mt-2 mb-4 pr-10">
-              <h2 className="text-xl font-display font-black text-[#3B1A1A] uppercase tracking-tight">
-                Scan ID
+              <h2 className="text-lg font-black text-text-main uppercase font-display tracking-tight leading-none">
+                Scan Customer Pin
               </h2>
-              <p className="text-xs font-semibold text-[#6E463B] leading-tight mt-1">
-                Point camera at customer's My ID QR Code to quickly open their profile.
+              <p className="text-[11px] font-bold text-text-light leading-tight mt-1">
+                Align QR Code within the bounds to open active customer account.
               </p>
             </div>
             
@@ -242,7 +280,7 @@ export default function CustomersScreen({
             
             {scanError && (
               <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-xl w-full">
-                <p className="text-[11px] font-bold text-red-700 text-center uppercase tracking-wide">
+                <p className="text-[10px] font-bold text-red-700 text-center uppercase tracking-wide">
                   {scanError}
                 </p>
               </div>
@@ -250,6 +288,7 @@ export default function CustomersScreen({
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -4,7 +4,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  X
+  X,
+  Plus
 } from "lucide-react";
 import { ScreenState, Customer } from "../types";
 
@@ -43,11 +44,10 @@ export default function AddCreditScreen({
 
     setIsSubmitting(true);
     
-    // Trigger callback
     onAddCredit({
       customerId,
       amount: proposedAmount,
-      description,
+      description: description.trim() || "Credit booking",
       date
     });
 
@@ -62,43 +62,57 @@ export default function AddCreditScreen({
   };
 
   return (
-    <div className="min-h-screen bg-[#C8521A] flex flex-col font-sans">
-      {/* Header */}
-      <header className="w-full sticky top-0 z-30 pt-6 pb-2 px-6">
-        <div className="flex items-center justify-between w-full max-w-[480px] mx-auto text-white">
-          <button onClick={onBack} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center active:scale-95 transition-transform" type="button">
-            <X className="w-5 h-5" />
+    <div className="min-h-screen bg-[#FBF5EC] flex flex-col font-sans text-text-main pb-24">
+      
+      {/* Visual Header */}
+      <header className="w-full pt-5 pb-4 px-5 bg-white border-b border-[#2B1114]/8 sticky top-0 z-30">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={onBack} 
+            className="w-10 h-10 bg-[#F1EBE4] hover:bg-[#E5DACB] rounded-full flex items-center justify-center active:scale-95 transition-transform text-text-main"
+            type="button"
+          >
+            <X className="w-5 h-5 stroke-[2.5]" />
           </button>
+          <span className="text-[10px] font-bold tracking-wider text-[#D94F12] uppercase bg-[#FFF0E7] px-3.5 py-1 rounded-full">
+            Record Debt Order
+          </span>
         </div>
       </header>
 
-      <main className="max-w-[480px] mx-auto w-full flex-1 flex flex-col px-6 pt-4 pb-[100px]">
-        <h1 className="text-[26px] font-display font-black text-white uppercase tracking-tighter leading-none mb-6">
-          ADD<br/>CREDIT
-        </h1>
+      <main className="max-w-[480px] mx-auto w-full flex-1 flex flex-col px-5 pt-5">
+        
+        <div className="mb-5 pb-2">
+          <h1 className="text-xl font-black font-display uppercase tracking-tight text-text-main leading-none">
+            Add Tab Booking
+          </h1>
+          <p className="text-[10px] font-bold text-text-light uppercase tracking-wider mt-1.5 leading-none">Record another tab items booking entry.</p>
+        </div>
 
+        {/* Warning card matching design style */}
         {isCloseToLimit && targetCustomer && (
-          <div className="mb-6 flex items-start gap-3 p-4 bg-[#3B1A1A] rounded-2xl border border-white/20 shadow-lg">
-            <AlertTriangle className="text-white w-6 h-6 shrink-0 mt-0.5" />
+          <div className="mb-5 flex items-start gap-3.5 p-4 bg-red-50 border border-red-200/50 rounded-2xl shadow-2xs">
+            <AlertTriangle className="text-red-600 w-5 h-5 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-display font-bold text-white text-sm tracking-wider uppercase mb-1">Limit Warning</p>
-              <p className="text-xs text-white/80 font-bold whitespace-normal">
-                {targetCustomer.name} already owes R{currentOwed.toFixed(2)}. This addition will bring them to R{(currentOwed + proposedAmount).toFixed(2)}, which is over or near their R{currentLimit} limit.
+              <p className="font-extrabold text-[#2B1114] text-xs uppercase tracking-tight mb-1">Facility Warning limit reached</p>
+              <p className="text-[11px] text-red-800 font-bold leading-normal">
+                {targetCustomer.name} already owes R{currentOwed.toFixed(2)}. This addition brings booking debt to R{(currentOwed + proposedAmount).toFixed(2)}, exceeding or nearing the customer's R{currentLimit} facility credit limit.
               </p>
             </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-6">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-4">
+          
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="font-display font-bold text-xs text-white/80 tracking-widest uppercase ml-1">Select Customer</label>
+              <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block ml-0.5">Select Debtor Customer</label>
               <button 
                 type="button"
                 onClick={() => onNavigate("newCustomer")}
-                className="font-display font-bold text-xs text-white underline tracking-widest uppercase mr-1 active:opacity-50"
+                className="text-[10px] font-black text-[#D94F12] underline uppercase tracking-wider mr-0.5 active:opacity-50"
               >
-                + New
+                + Register New
               </button>
             </div>
             <div className="relative">
@@ -106,23 +120,23 @@ export default function AddCreditScreen({
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 required
-                className="w-full h-14 pl-6 pr-12 bg-white/10 border border-white/20 rounded-2xl text-white text-base font-bold focus:ring-2 focus:ring-white outline-none transition-all appearance-none"
+                className="w-full h-12 pl-4 pr-11 bg-white border border-text-main/10 rounded-xl text-xs font-bold text-text-main outline-none appearance-none"
               >
-                <option value="" disabled className="text-black">Hamba, search...</option>
+                <option value="" disabled className="text-text-muted">Search customers...</option>
                 {customers.map(c => (
-                  <option key={c.id} value={c.id} className="text-black">
+                  <option key={c.id} value={c.id} className="text-text-main">
                     {c.name} {c.owed > 0 ? `(Owes R${c.owed.toFixed(0)})` : "(Paid Up)"}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-white w-5 h-5 pointer-events-none" />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-text-main w-5 h-5 pointer-events-none stroke-[2.5]" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="font-display font-bold text-xs text-white/80 tracking-widest uppercase ml-1">Amount Owed</label>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block ml-0.5">Booking Amount (R)</label>
             <div className="relative">
-              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-bold text-white/50">R</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-black text-text-muted">R</span>
               <input
                 type="number"
                 step="0.01"
@@ -131,55 +145,53 @@ export default function AddCreditScreen({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
-                className="w-full h-16 pl-12 pr-6 bg-white/10 border border-white/20 rounded-2xl text-2xl font-display font-black text-white focus:ring-2 focus:ring-white outline-none transition-all placeholder:text-white/20"
+                className="w-full h-13 pl-8 pr-4 bg-white border border-text-main/10 rounded-xl text-base font-black text-text-main outline-none focus:border-[#D94F12] transition-colors"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="font-display font-bold text-xs text-white/80 tracking-widest uppercase ml-1">Items Description</label>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block ml-0.5">Brief items / reasons</label>
             <input
               type="text"
-              placeholder="e.g. Bread, milk, sugar"
+              placeholder="e.g. Bread, 2L Cooldrink, Eggs"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full h-14 px-6 bg-white/10 border border-white/20 rounded-2xl text-white text-base font-bold focus:ring-2 focus:ring-white outline-none transition-all placeholder:text-white/40"
+              className="w-full h-12 px-4 bg-white border border-text-main/10 rounded-xl text-xs font-bold text-text-main outline-none placeholder:text-text-muted focus:border-[#D94F12]"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="font-display font-bold text-xs text-white/80 tracking-widest uppercase ml-1">Transaction Date</label>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block ml-0.5">Booking Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full h-14 px-6 bg-white/10 border border-[#FFF3E0]/30 rounded-2xl text-white text-base font-bold focus:ring-2 focus:ring-white outline-none transition-all flex items-center"
+              className="w-full h-12 px-4 bg-white border border-text-main/10 rounded-xl text-xs font-bold text-text-main outline-none focus:border-[#D94F12]"
             />
           </div>
 
-          <div className="pt-8 mt-auto">
+          <div className="pt-6 mt-auto">
             <button
               type="submit"
               disabled={isSubmitting || isSuccess || !customerId || proposedAmount <= 0}
-              className={`w-full h-14 rounded-full flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95
-                ${isSuccess ? 'bg-[#196D31] text-white' : 'bg-white text-[#C8521A] hover:opacity-90 disabled:opacity-50'}
+              className={`w-full h-14 rounded-full flex items-center justify-center gap-2 shadow-xs transition-transform active:scale-95
+                ${isSuccess ? 'bg-emerald-600 text-white' : 'bg-burgundy hover:bg-[#2B1114] text-white disabled:opacity-40'}
               `}
             >
               {isSubmitting ? (
                 <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  <span className="text-base font-display font-bold tracking-widest uppercase">Saving...</span>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span className="font-bold text-xs uppercase tracking-wider">Saving Ledger Entry...</span>
                 </>
               ) : isSuccess ? (
                 <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="text-base font-display font-bold tracking-widest uppercase">Saved!</span>
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                  <span className="font-bold text-xs uppercase tracking-wider">Recorded Saved!</span>
                 </>
               ) : (
-                <>
-                  <span className="text-base font-display font-black tracking-widest uppercase">Add Entry</span>
-                </>
+                <span className="font-bold text-xs uppercase tracking-wider">Save Booking Entry</span>
               )}
             </button>
           </div>

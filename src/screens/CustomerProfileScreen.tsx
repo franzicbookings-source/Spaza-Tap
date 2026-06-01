@@ -14,7 +14,12 @@ import {
   Download,
   QrCode,
   FileText,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronRight,
+  Shield,
+  MapPin,
+  Coins,
+  History
 } from "lucide-react";
 import { ScreenState, Customer, Transaction } from "../types";
 import jsPDF from "jspdf";
@@ -53,7 +58,7 @@ export default function CustomerProfileScreen({
   const [editName, setEditName] = useState(customer.name);
   const [editPhone, setEditPhone] = useState(customer.phone);
   const [editArea, setEditArea] = useState(customer.area || "");
-  const [editLimit, setEditLimit] = useState(customer.limit ? customer.limit.toString() : "500");
+  const [editLimit, setEditLimit] = useState(customer.limit ? customer.limit.toString() : "2000");
   const [editNotes, setEditNotes] = useState(customer.notes || "");
   const [editError, setEditError] = useState("");
 
@@ -92,7 +97,6 @@ export default function CustomerProfileScreen({
 
   const finalizePayment = () => {
     const amountNum = parseFloat(payAmount);
-    // Call state update
     onRecordPayment({
       customerId: customer.id,
       amount: amountNum,
@@ -121,7 +125,7 @@ export default function CustomerProfileScreen({
       name: editName.trim(),
       phone: editPhone.trim(),
       area: editArea.trim(),
-      limit: parseFloat(editLimit) || 500,
+      limit: parseFloat(editLimit) || 2000,
       notes: editNotes.trim()
     });
 
@@ -141,17 +145,14 @@ export default function CustomerProfileScreen({
       return;
     }
 
-    // Default template or customized
     const template = whatsappTemplate || "Hi [Customer Name], this is a reminder that you owe R[Amount] at [Shop Name]. Your balance has been outstanding for [Days] days. Please pay when possible. Thank you.";
     
-    // Replace placeholders
     let message = template
       .replace("[Customer Name]", customer.name)
       .replace("[Amount]", customer.owed.toFixed(2))
       .replace("[Days]", customer.daysOwing.toString())
       .replace("[Shop Name]", shopName);
 
-    // Format phone to South African international form +27
     let cleanPhone = customer.phone.replace(/[^0-9]/g, "");
     if (cleanPhone.startsWith("0")) {
       cleanPhone = "27" + cleanPhone.substring(1);
@@ -159,12 +160,10 @@ export default function CustomerProfileScreen({
       cleanPhone = cleanPhone.substring(1);
     }
     
-    // Build URL and open
     const waUrl = `https://wa.me/${cleanPhone}/?text=${encodeURIComponent(message)}`;
     window.open(waUrl, "_blank");
   };
 
-  // Filter transactions for this customer
   const relatedTxs = transactions.filter((t) => t.customerId === customer.id);
 
   const getStatusLabelAndStyles = () => {
@@ -172,12 +171,12 @@ export default function CustomerProfileScreen({
       return { label: "PAID UP", bg: "bg-[#E6F4EA]", text: "text-[#137333] border-[#137333]/20" };
     }
     if (customer.status === "serious") {
-      return { label: "SERIOUS OVERDUE", bg: "bg-red-50 border-red-200", text: "text-[#B71C1C]" };
+      return { label: "SERIOUS OVERDUE", bg: "bg-[#FCE8E6]", text: "text-[#C5221F]" };
     }
     if (customer.status === "warning") {
-      return { label: "WARNING", bg: "bg-yellow-50 border-yellow-200", text: "text-[#B06000]" };
+      return { label: "WARNING", bg: "bg-[#FEF7E0]", text: "text-[#B06000]" };
     }
-    return { label: "GOOD", bg: "bg-green-50 border-green-200", text: "text-[#137333]" };
+    return { label: "GOOD", bg: "bg-[#E6F4EA]", text: "text-[#137333]" };
   };
 
   const statusStyle = getStatusLabelAndStyles();
@@ -259,287 +258,319 @@ export default function CustomerProfileScreen({
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F5EDE0] pb-24 font-sans relative">
-      <header className="w-full pt-6 pb-2 px-6">
-        <div className="flex items-center justify-between w-full max-w-[480px] mx-auto text-[#3B1A1A]">
-          <button onClick={onBack} className="w-10 h-10 bg-[#E5DACB] rounded-full flex items-center justify-center active:scale-95 transition-transform">
-            <ArrowLeft className="w-5 h-5" />
+    <div className="min-h-screen bg-[#FBF5EC] pb-28 font-sans relative">
+      
+      {/* Redesigned Premium Header Nav bar */}
+      <header className="w-full pt-5 pb-4 px-5 bg-white border-b border-[#2B1114]/8">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={onBack} 
+            className="w-10 h-10 bg-[#F1EBE4] hover:bg-[#E5DACB] rounded-full flex items-center justify-center active:scale-95 transition-transform text-[#2B1114]"
+          >
+            <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
+          
           <div className="flex items-center gap-2">
+            
+            {/* Show QR reference Code */}
             <button 
               onClick={() => setShowQrModal(true)}
-              className="w-10 h-10 bg-[#E5DACB] rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              title="Show QR Code"
+              className="w-10 h-10 bg-[#FFF0E7] text-[#D94F12] border border-primary/20 rounded-full flex items-center justify-center active:scale-95 transition-all"
+              title="QR Access Card"
             >
               <QrCode className="w-5 h-5" />
             </button>
+
+            {/* Export menu dropdown list */}
             <div className="relative">
               <button 
                 onClick={() => setShowExportMenu(!showExportMenu)}
-                className="w-10 h-10 bg-[#E5DACB] rounded-full flex items-center justify-center active:scale-95 transition-transform"
-                title="Download Statement"
+                className="w-10 h-10 bg-[#F1EBE4] text-[#2B1114] rounded-full flex items-center justify-center active:scale-95 transition-all"
+                title="Statement Download"
               >
                 <Download className="w-5 h-5" />
               </button>
               {showExportMenu && (
-                <div className="absolute top-12 right-0 bg-white rounded-xl shadow-xl w-36 border border-[#E8D0BB] z-50 overflow-hidden">
+                <div className="absolute top-12 right-0 bg-white rounded-2xl shadow-lg w-40 border border-[#2B1114]/8 z-50 overflow-hidden py-1">
                   <button
                     onClick={() => { setShowExportMenu(false); handleGeneratePDF(); }}
-                    className="w-full text-left px-4 py-3 text-sm font-bold text-[#3B1A1A] flex items-center gap-2 hover:bg-[#F5EDE0]"
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-text-main flex items-center gap-2 hover:bg-[#FBF5EC]"
                   >
-                    <FileText className="w-4 h-4 text-[#C8521A]" />
-                    Save PDF
+                    <FileText className="w-4 h-4 text-primary" />
+                    Save PDF Card
                   </button>
-                  <div className="h-[1px] w-full bg-[#E8D0BB]"></div>
                   <button
                     onClick={() => { setShowExportMenu(false); handleGenerateCSV(); }}
-                    className="w-full text-left px-4 py-3 text-sm font-bold text-[#3B1A1A] flex items-center gap-2 hover:bg-[#F5EDE0]"
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-text-main flex items-center gap-2 hover:bg-[#FBF5EC]"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-[#196D31]" />
-                    Save CSV
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    Export CSV
                   </button>
                 </div>
               )}
             </div>
+
+            {/* Edit Profile details button */}
             <button 
               onClick={() => setShowEditModal(true)}
-              className="w-10 h-10 bg-[#E5DACB] rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              title="Edit Customer"
+              className="w-10 h-10 bg-[#F1EBE4] text-[#2B1114] rounded-full flex items-center justify-center active:scale-95 transition-all"
+              title="Edit Profile"
             >
               <MoreVertical className="w-5 h-5" />
             </button>
+
           </div>
         </div>
       </header>
 
-      {/* Floating Global Micro Toast notifications */}
+      {/* Embedded top notifications */}
       {toastMessage && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-xs font-bold shadow-xl flex items-center gap-2 max-w-[90%] uppercase ${
-          toastType === "success" ? "bg-[#196D31] text-white" : toastType === "error" ? "bg-[#BA1A1A] text-white" : "bg-[#3B1A1A] text-white"
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-full text-xs font-bold shadow-xl flex items-center gap-2 max-w-[90%] uppercase ${
+          toastType === "success" ? "bg-emerald-600 text-white" : toastType === "error" ? "bg-danger text-white" : "bg-text-main text-white"
         }`}>
           {toastMessage}
         </div>
       )}
 
-      <main className="max-w-[480px] mx-auto w-full flex-1 flex flex-col pt-4 px-6">
-        <section className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-display font-black text-xl shrink-0 bg-[#C8521A] text-white border-4 border-[#F5EDE0] shadow-sm">
+      <main className="px-5 mt-5 space-y-5">
+        
+        {/* Profile Card details */}
+        <section className="bg-white border border-[#2B1114]/8 rounded-[24px] p-5 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-display font-black text-xl shrink-0 bg-[#FFF0E7] text-[#D94F12] border-2 border-primary/20 shadow-xs">
             {customer.photoUrl ? (
               <img src={customer.photoUrl} alt={customer.name} className="w-full h-full object-cover" />
             ) : (
-              customer.initials
+              customer.initials || "C"
             )}
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-[26px] font-display font-black text-[#3B1A1A] uppercase tracking-tighter leading-tight mb-1">{customer.name}</h2>
-            <p className="text-sm font-bold text-[#6E463B]">{customer.phone || "No phone number saved"}</p>
+          <div>
+            <h2 className="text-xl font-black text-text-main font-display tracking-tight uppercase leading-tight mb-1">
+              {customer.name}
+            </h2>
+            <p className="text-xs font-bold text-text-light">{customer.phone || "No phone number saved"}</p>
           </div>
         </section>
 
-        {/* Action button triggers */}
-        <section className="mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={() => onNavigate('addCredit')}
-              className="bg-[#C8521A] text-white rounded-3xl p-5 flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
-            >
-              <PlusCircle className="w-7 h-7 mb-2" />
-              <span className="font-display font-bold text-xs uppercase tracking-wider">Add Credit</span>
-            </button>
-            <button 
-              onClick={() => {
-                if (customer.owed <= 0) {
-                  triggerToast("Customer has no outstanding balance.", "info");
-                } else {
-                  setShowPayModal(true);
-                }
-              }}
-              className="bg-[#3B1A1A] text-white rounded-3xl p-5 flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
-            >
-              <Banknote className="w-7 h-7 mb-2" />
-              <span className="font-display font-bold text-xs uppercase tracking-wider">Record Pay</span>
-            </button>
-          </div>
+        {/* Big Action buttons for Credit ledger record */}
+        <section className="grid grid-cols-2 gap-4">
+          
+          <button 
+            onClick={() => onNavigate('addCredit')}
+            className="h-24 bg-[#D94F12] text-white rounded-[24px] flex flex-col items-center justify-center shadow-[0_8px_20px_rgba(217,79,18,0.15)] active:scale-98 transition-transform"
+          >
+            <PlusCircle className="w-7 h-7 mb-1.5 stroke-[2.5]" />
+            <span className="font-bold text-xs uppercase tracking-wider">Add Credit</span>
+          </button>
+
+          <button 
+            onClick={() => {
+              if (customer.owed <= 0) {
+                triggerToast("Customer has no outstanding balance.", "info");
+              } else {
+                setShowPayModal(true);
+              }
+            }}
+            className="h-24 bg-burgundy text-white rounded-[24px] flex flex-col items-center justify-center active:scale-98 transition-transform"
+          >
+            <Banknote className="w-7 h-7 mb-1.5 text-primary stroke-[2.5]" />
+            <span className="font-bold text-xs uppercase tracking-wider">Record Pay</span>
+          </button>
+
         </section>
 
-        {/* Balances card */}
-        <section className="bg-[#f9ede0] rounded-3xl p-6 border border-[#E8D0BB] mb-6">
-          <div className="flex justify-between items-start mb-4">
+        {/* Ledger Balance Information Widget */}
+        <section className="bg-white border border-[#2B1114]/8 rounded-[24px] p-5 space-y-4 shadow-2xs">
+          <div className="flex justify-between items-start">
             <div>
-              <p className="font-display font-bold text-[10px] text-[#C8521A] uppercase tracking-widest mb-1">Total Owing</p>
-              <p className="text-[28px] font-display font-black text-[#3B1A1A] leading-none">R{customer.owed.toFixed(2)}</p>
+              <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">Total Outstanding</span>
+              <p className={`text-3xl font-black leading-none ${customer.owed > 0 ? "text-danger" : "text-emerald-600"}`}>
+                R{customer.owed.toFixed(2)}
+              </p>
             </div>
+            
             {customer.limit && (
               <div className="text-right">
-                <p className="font-display font-bold text-[10px] text-[#6E463B] uppercase tracking-widest mb-1">Available Credit</p>
-                <p className="text-base font-bold text-[#3B1A1A]">R{(customer.limit - customer.owed).toFixed(2)}</p>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">Available Credit</span>
+                <p className="text-base font-black text-text-main">
+                  R{(customer.limit - customer.owed).toFixed(2)}
+                </p>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#3B1A1A]/5 pt-4">
-            <p className="font-display font-bold text-[10px] text-[#C8521A] uppercase tracking-widest">Status:</p>
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black ${statusStyle.bg} ${statusStyle.text}`}>
+          <div className="flex items-center justify-between pt-3 border-t border-text-main/5">
+            <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Account standing</span>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold ${statusStyle.bg} ${statusStyle.text}`}>
               {customer.owed > 0 && customer.status !== "none" && <AlertTriangle className="w-3.5 h-3.5" />}
-              <span>{statusStyle.label} ({customer.daysOwing} {customer.daysOwing === 1 ? "day" : "days"})</span>
+              <span className="uppercase tracking-wider">{statusStyle.label} ({customer.daysOwing} Days)</span>
             </div>
           </div>
         </section>
 
-        {/* WhatsApp Reminder quick launcher */}
+        {/* Highlighted WhatsApp Reminder trigger button */}
         {customer.owed > 0 && (
           <button
             onClick={handleWhatsAppReminder}
-            className="w-full bg-[#25D366] text-white py-4 rounded-2xl font-bold text-sm tracking-wider uppercase mb-6 flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
+            className="w-full h-13 bg-[#25D366] text-white rounded-2xl font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 active:scale-98 transition-transform shadow-[0_4px_16px_rgba(37,211,102,0.15)]"
           >
-            <Send className="w-4 h-4 fill-white" />
+            <Send className="w-4 h-4 fill-white text-white" />
             <span>Send WhatsApp Reminder</span>
           </button>
         )}
 
-        {/* Credit Control Actions (Pause/Unpause and Reference Number) */}
-        <section className="mb-6 bg-[#f9ede0] p-5 rounded-3xl border border-[#E8D0BB]">
-          <h3 className="font-display font-black text-xs text-[#3B1A1A] uppercase tracking-wider mb-3 leading-none">Credit Facility Status</h3>
+        {/* Facility Credit controls details */}
+        <section className="bg-white border border-[#2B1114]/8 p-5 rounded-[24px] space-y-3">
+          <h3 className="font-extrabold text-xs text-text-main uppercase tracking-wider leading-none">
+            Facility Settings
+          </h3>
           
-          <div className="flex items-center justify-between py-2 border-b border-[#3B1A1A]/5">
-            <span className="text-[11px] font-semibold text-[#6E463B] uppercase tracking-wider">Reference Code</span>
-            <span className="font-mono text-xs font-black text-[#3B1A1A]">
-              {customer.customerReferenceNumber || "Generating..."}
+          <div className="flex items-center justify-between py-1 border-b border-text-main/5">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Ref ID Code</span>
+            <span className="font-mono text-xs font-black text-text-main tracking-widest">
+              {customer.customerReferenceNumber || "N/A"}
             </span>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-b border-[#3B1A1A]/5">
-            <span className="text-[11px] font-semibold text-[#6E463B] uppercase tracking-wider">Linked Account</span>
-            <span className={`text-xs font-black uppercase tracking-wider ${customer.linkedCustomerUserId ? "text-[#196D31]" : "text-[#d97706]"}`}>
-              {customer.linkedCustomerUserId ? "Yes (Linked)" : "Not linked yet"}
+          <div className="flex items-center justify-between py-1 border-b border-[#2B1114]/5">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Join Status</span>
+            <span className={`text-[10px] font-black uppercase tracking-wider ${customer.linkedCustomerUserId ? "text-[#137333]" : "text-[#D94F12]"}`}>
+              {customer.linkedCustomerUserId ? "Linked to App" : "Not Linked Yet"}
             </span>
           </div>
 
-          <div className="flex items-center justify-between py-2.5">
-            <span className="text-[11px] font-semibold text-[#6E463B] uppercase tracking-wider">Status</span>
+          <div className="flex items-center justify-between py-1 border-b border-text-main/5">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Credit Limit</span>
+            <span className="text-xs font-extrabold text-text-main">
+              R{(customer.limit || 2000).toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between py-1">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Limit Status</span>
             <div className="flex items-center">
-              <span className={`w-2.5 h-2.5 rounded-full mr-2 ${customer.creditStatus === "paused" ? "bg-[#BA1A1A] animate-pulse" : "bg-[#196D31]"}`}></span>
-              <span className={`text-xs font-black uppercase tracking-wider ${customer.creditStatus === "paused" ? "text-[#BA1A1A]" : "text-[#196D31]"}`}>
+              <span className={`w-2 h-2 rounded-full mr-2 ${customer.creditStatus === "paused" ? "bg-danger animate-pulse" : "bg-emerald-600"}`} />
+              <span className={`text-xs font-black uppercase tracking-wider ${customer.creditStatus === "paused" ? "text-danger" : "text-emerald-600"}`}>
                 {customer.creditStatus === "paused" ? "Paused" : "Active"}
               </span>
             </div>
           </div>
 
-          <div className="mt-3">
+          <div className="pt-2">
             {customer.creditStatus === "paused" ? (
               <button
                 onClick={() => {
-                  onUpdateCustomer(customer.id, { creditStatus: "active" });
-                  triggerToast("Credit facility is now active", "success");
+                  onUpdateCustomer(customer!.id || "", { creditStatus: "active" });
+                  triggerToast("Credit facility active", "success");
                 }}
-                className="w-full h-11 bg-[#196D31] text-white font-display font-extrabold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-transform shadow-sm"
+                className="w-full h-10.5 bg-emerald-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-transform"
               >
-                Unpause Credit Facility
+                Unpause Account Facility
               </button>
             ) : (
               <button
                 onClick={() => {
-                  onUpdateCustomer(customer.id, { creditStatus: "paused" });
-                  triggerToast("Credit facility has been paused", "error");
+                  onUpdateCustomer(customer!.id || "", { creditStatus: "paused" });
+                  triggerToast("Credit facility paused", "error");
                 }}
-                className="w-full h-11 bg-[#BA1A1A] text-white font-display font-extrabold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-transform shadow-sm"
+                className="w-full h-10.5 bg-danger text-white font-extrabold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-transform"
               >
-                Pause Credit Facility
+                Pause Account Facility
               </button>
             )}
           </div>
         </section>
 
-        {/* Address and details */}
-        <section className="mb-6">
-          <h3 className="font-display font-black text-xl text-[#3B1A1A] tracking-tighter mb-3 uppercase">Details</h3>
-          <div className="space-y-3">
-            <div className="bg-[#f9ede0] p-4 rounded-2xl flex justify-between border border-[#E8D0BB] text-xs font-semibold">
-              <span className="text-[#6E463B]">Area / Address</span>
-              <span className="text-[#3B1A1A] font-bold">{customer.area || "No address saved"}</span>
-            </div>
-            <div className="bg-[#f9ede0] p-4 rounded-2xl flex justify-between border border-[#E8D0BB] text-xs font-semibold">
-              <span className="text-[#6E463B]">Credit Account Limit</span>
-              <span className="text-[#3B1A1A] font-bold">R{(customer.limit || 500).toFixed(2)}</span>
-            </div>
-            {customer.notes && (
-              <div className="bg-[#f9ede0] p-4 rounded-2xl border border-[#E8D0BB] text-xs font-semibold space-y-1">
-                <span className="text-[#6E463B]">Notes & Remarks</span>
-                <p className="text-[#3B1A1A] whitespace-pre-wrap">{customer.notes}</p>
-              </div>
-            )}
+        {/* Static details information with professional labels */}
+        <section className="bg-white border border-[#2B1114]/8 p-5 rounded-[24px] space-y-3">
+          <h3 className="font-extrabold text-xs text-text-main uppercase tracking-wider leading-none">
+            Demographic Details
+          </h3>
+          <div className="flex items-center justify-between py-1.5 border-b border-text-main/5 text-xs">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Shop Area</span>
+            <span className="font-bold text-text-main">{customer.area || "No address saved"}</span>
           </div>
+          {customer.notes && (
+            <div className="pt-2 text-xs">
+              <span className="text-[10px] font-bold text-text-light uppercase tracking-wider block mb-1">Staff Notes</span>
+              <p className="text-text-main bg-background p-3 rounded-xl border border-text-main/5 whitespace-pre-wrap leading-relaxed">
+                {customer.notes}
+              </p>
+            </div>
+          )}
         </section>
 
-        {/* Historical transactional registers */}
-        <section className="mb-8">
-          <h3 className="font-display font-black text-xl text-[#3B1A1A] tracking-tighter mb-3 uppercase">LEDGER HISTORY</h3>
+        {/* Ledger history list section */}
+        <section className="space-y-3 pb-8">
+          <h3 className="text-xs font-black text-text-muted uppercase tracking-wider pl-1">
+            Transaction Ledger History
+          </h3>
           <div className="space-y-3">
             {relatedTxs.map((tx) => {
               const isPayment = tx.type === "payment";
               return (
-                <div key={tx.id} className="bg-white p-4 rounded-2xl border border-[#E8D0BB] flex justify-between items-center shadow-sm">
+                <div key={tx.id} className="bg-white p-4.5 rounded-2xl border border-text-main/5 flex justify-between items-center shadow-2xs">
                   <div>
-                    <h4 className="text-sm font-bold text-[#3B1A1A] leading-snug">{tx.description}</h4>
-                    <p className="text-[10px] font-bold text-[#C8521A] mt-0.5 uppercase tracking-wider">{tx.date}</p>
+                    <h4 className="text-xs font-bold text-text-main leading-tight uppercase">{tx.description}</h4>
+                    <p className="text-[9px] font-extrabold font-mono text-[#D94F12] mt-1 tracking-wider uppercase">{tx.date}</p>
                   </div>
                   <div className="text-right">
-                    <p className={`text-base font-black ${isPayment ? "text-[#137333]" : "text-[#BA1A1A]"}`}>
+                    <p className={`text-sm font-black ${isPayment ? "text-emerald-600" : "text-danger"}`}>
                       {isPayment ? "-" : "+"}R{tx.amount.toFixed(2)}
                     </p>
-                    <p className="text-[10px] font-bold text-[#6E463B] mt-0.5">BAL: R{tx.balanceAfter.toFixed(2)}</p>
+                    <p className="text-[9px] font-extrabold text-text-light mt-0.5 font-mono">BAL: R{tx.balanceAfter.toFixed(2)}</p>
                   </div>
                 </div>
               );
             })}
             
             {relatedTxs.length === 0 && (
-              <div className="text-center py-6 bg-white/40 border border-[#E8D0BB]/60 rounded-2xl">
-                <p className="text-xs font-bold text-[#6E463B] italic">No transaction ledger recorded for this customer.</p>
+              <div className="text-center py-8 bg-white border border-text-main/5 rounded-[24px]">
+                <p className="text-xs text-text-light italic">No transactions cataloged yet.</p>
               </div>
             )}
           </div>
         </section>
+
       </main>
 
-      {/* RECORD PAYMENT MODAL DIALOG */}
+      {/* PAYMENT DIALOG POPUP */}
       {showPayModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-[#F5EDE0] rounded-3xl max-w-[420px] w-full p-6 border border-[#E8D0BB] shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#FBF5EC] rounded-[28px] max-w-[420px] w-full p-6 border border-[#2B1114]/8 shadow-2xl relative">
             <button 
               onClick={() => { setShowPayModal(false); setPayError(""); setShowConfirmPay(false); }}
-              className="absolute right-4 top-4 w-8 h-8 bg-[#E5DACB] rounded-full flex items-center justify-center text-[#3B1A1A] font-bold"
+              className="absolute right-4 top-4 w-8 h-8 bg-white/50 rounded-full flex items-center justify-center text-text-main font-bold active:scale-95 transition-transform"
             >
               ✕
             </button>
-            <h3 className="text-xl font-display font-black text-[#3B1A1A] mb-4 uppercase tracking-tighter">Record Payment</h3>
+            <h3 className="text-base font-black text-text-main font-display mb-4 uppercase tracking-tighter">Record Payment</h3>
             
             {payError && (
-              <div className="mb-4 p-3.5 bg-[#BA1A1A]/15 border-l-4 border-[#BA1A1A] text-[#BA1A1A] text-xs font-bold rounded-r-xl">
+              <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-600 text-red-700 text-xs font-bold rounded-r-xl">
                 {payError}
               </div>
             )}
 
             {showConfirmPay ? (
-              <div className="space-y-6 pt-2">
-                <div className="text-center bg-[#3B1A1A]/5 p-5 rounded-2xl border border-[#E5DACB]">
-                  <p className="text-[#3B1A1A] font-medium text-sm">Please confirm you are recording a payment of:</p>
-                  <p className="text-3xl font-display font-black text-[#137333] mt-2">R{parseFloat(payAmount).toFixed(2)}</p>
-                  {payNote && <p className="text-[11px] font-mono text-[#6E463B] mt-3">Note: "{payNote}"</p>}
+              <div className="space-y-5 pt-2">
+                <div className="text-center bg-white p-5 rounded-2xl border border-[#2B1114]/8 shadow-xs">
+                  <p className="text-xs font-bold text-text-light uppercase tracking-wider">Confirming payment of</p>
+                  <p className="text-3xl font-black text-emerald-600 mt-2 font-display">R{parseFloat(payAmount).toFixed(2)}</p>
+                  {payNote && <p className="text-xs font-mono text-text-muted mt-3">Ref: "{payNote}"</p>}
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => setShowConfirmPay(false)}
-                    className="flex-1 h-12 bg-[#E5DACB] text-[#3B1A1A] rounded-full font-display font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform"
+                    className="flex-1 h-12 bg-white border border-text-main/10 text-text-main rounded-full font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform"
                   >
                     Go Back
                   </button>
                   <button
                     type="button"
                     onClick={finalizePayment}
-                    className="flex-1 h-12 bg-[#137333] text-white rounded-full font-display font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform shadow-md"
+                    className="flex-1 h-12 bg-emerald-600 text-white rounded-full font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform shadow-xs"
                   >
                     Confirm & Save
                   </button>
@@ -547,10 +578,11 @@ export default function CustomerProfileScreen({
               </div>
             ) : (
               <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                
                 <div className="space-y-1">
-                  <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Payment Amount</label>
+                  <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Payment Amount (R)</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-black text-[#3B1A1A]/50">R</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-text-muted">R</span>
                     <input
                       type="number"
                       step="0.01"
@@ -559,38 +591,38 @@ export default function CustomerProfileScreen({
                       placeholder="0.00"
                       value={payAmount}
                       onChange={(e) => setPayAmount(e.target.value)}
-                      className="w-full h-12 pl-9 pr-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-lg font-black outline-none"
+                      className="w-full h-12 pl-9 pr-4 bg-white rounded-xl border border-text-main/10 text-base font-black outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Payment Date</label>
+                  <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Payment Date</label>
                   <input
                     type="date"
                     required
                     value={payDate}
                     onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full h-12 px-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-bold outline-none"
+                    className="w-full h-12 px-4 bg-white rounded-xl border border-text-main/10 text-xs font-bold outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Payment Note / Remark</label>
+                  <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Payment Remark Note</label>
                   <input
                     type="text"
-                    placeholder="e.g. Paid in full / Part payment"
+                    placeholder="e.g. Card Payment, Cash till, etc."
                     value={payNote}
                     onChange={(e) => setPayNote(e.target.value)}
-                    className="w-full h-12 px-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-bold outline-none"
+                    className="w-full h-12 px-4 bg-white rounded-xl border border-text-main/10 text-xs font-bold outline-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full h-12 bg-[#3B1A1A] text-[#F5EDE0] rounded-full font-display font-extrabold text-sm uppercase tracking-wider shadow-md mt-4 animate-fade-in"
+                  className="w-full h-12 bg-burgundy hover:bg-[#2B1114] text-white rounded-full font-bold text-xs uppercase tracking-wider shadow-xs mt-4"
                 >
-                  Save Payment
+                  Proceed to Confirm
                 </button>
               </form>
             )}
@@ -598,119 +630,123 @@ export default function CustomerProfileScreen({
         </div>
       )}
 
-      {/* EDIT CUSTOMER MODAL DIALOG */}
+      {/* EDIT CUSTOMER DETAILS MODAL DIALOG */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-[#F5EDE0] rounded-3xl max-w-[420px] w-full p-6 border border-[#E8D0BB] shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#FBF5EC] rounded-[28px] max-w-[420px] w-full p-6 border border-[#2B1114]/8 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar">
             <button 
               onClick={() => setShowEditModal(false)}
-              className="absolute right-4 top-4 w-8 h-8 bg-[#E5DACB] rounded-full flex items-center justify-center text-[#3B1A1A] font-bold"
+              className="absolute right-4 top-4 w-8 h-8 bg-white/50 rounded-full flex items-center justify-center text-text-main font-bold outline-none active:scale-95 transition-transform"
             >
               ✕
             </button>
-            <h3 className="text-xl font-display font-black text-[#3B1A1A] mb-4 uppercase tracking-tighter">Edit Customer</h3>
+            <h3 className="text-base font-black text-text-main font-display mb-4 uppercase tracking-tighter">Edit Customer Details</h3>
 
             {editError && (
-              <div className="mb-4 p-3.5 bg-[#BA1A1A]/15 border-l-4 border-[#BA1A1A] text-[#BA1A1A] text-xs font-bold rounded-r-xl">
+              <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-600 text-red-700 text-xs font-bold rounded-r-xl">
                 {editError}
               </div>
             )}
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
+              
               <div className="space-y-1">
-                <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Name</label>
+                <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Full Name</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full h-12 px-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-bold outline-none"
+                  className="w-full h-12 px-4 bg-white rounded-xl border border-text-main/10 text-xs font-bold outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Phone</label>
+                <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Phone Number</label>
                 <input
                   type="text"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full h-12 px-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-bold outline-none"
+                  className="w-full h-12 px-4 bg-white rounded-xl border border-text-main/10 text-xs font-bold outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Area / Location</label>
+                <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Area / Residence address</label>
                 <input
                   type="text"
                   value={editArea}
                   onChange={(e) => setEditArea(e.target.value)}
-                  className="w-full h-12 px-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-bold outline-none"
+                  className="w-full h-12 px-4 bg-white rounded-xl border border-text-main/10 text-xs font-bold outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Credit Limit (R)</label>
+                <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Account Credit Limit (R)</label>
                 <input
                   type="number"
                   value={editLimit}
                   onChange={(e) => setEditLimit(e.target.value)}
-                  className="w-full h-12 px-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-bold outline-none font-mono"
+                  className="w-full h-12 px-4 bg-white rounded-xl border border-text-main/10 text-xs font-bold outline-none font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-display font-bold text-[11px] text-[#C8521A] tracking-widest uppercase">Notes</label>
+                <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block">Staff notes / Warnings</label>
                 <textarea
                   rows={2}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full p-4 bg-white rounded-xl border border-[#E8D0BB] focus:border-[#C8521A] text-sm font-semibold outline-none resize-none"
+                  className="w-full p-4 bg-white rounded-xl border border-text-main/10 text-xs font-semibold outline-none resize-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full h-12 bg-[#C8521A] text-white rounded-full font-display font-extrabold text-sm uppercase tracking-wider shadow-md mt-4"
+                className="w-full h-12 bg-burgundy text-white rounded-full font-bold text-xs uppercase tracking-wider shadow-xs mt-4"
               >
-                Save Customer
+                Save Details
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* CUSTOMER QR CODE MODAL */}
+      {/* CUSTOMER ACCESS QR MODAL CARD */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs flex-col">
-          <div className="bg-white rounded-3xl max-w-[340px] w-full p-6 relative overflow-hidden flex flex-col items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs flex-col">
+          <div className="bg-white rounded-[28px] max-w-[340px] w-full p-6 relative overflow-hidden flex flex-col items-center">
+            
             <button
               onClick={() => setShowQrModal(false)}
-              className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-[#F5EDE0] text-[#3B1A1A] rounded-full z-[70] active:scale-95 transition-transform"
+              className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-[#FBF5EC] text-text-main rounded-full z-[70] active:scale-95 transition-transform font-bold outline-none"
             >
-              <X className="w-4 h-4" />
+              ✕
             </button>
+            
             <div className="w-full text-center mt-2 mb-4 pr-10">
-              <h2 className="text-xl font-display font-black text-[#3B1A1A] uppercase tracking-tight">
-                Customer Reference
+              <h2 className="text-base font-black text-text-main uppercase font-display tracking-tight leading-none">
+                Scan Access Card
               </h2>
-              <p className="text-xs font-semibold text-[#6E463B] leading-tight mt-1">
-                Have the customer scan this code on their phone to autofill their setup.
+              <p className="text-[11px] font-bold text-text-light leading-tight mt-1">
+                Have the customer scan this code or input reference below to log into their Portal.
               </p>
             </div>
             
-            <div className="w-[200px] h-[200px] bg-slate-50 border-4 border-[#3B1A1A] p-2 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative group shadow">
+            <div className="w-[190px] h-[190px] bg-slate-50 border-4 border-text-main p-2 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative shadow-xs">
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(customer.customerReferenceNumber!)}`} 
-                alt={`${customer.name} Reference Code`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(customer.customerReferenceNumber || "")}`} 
+                alt={`${customer.name} ID`} 
                 className="w-full h-full object-contain" 
               />
             </div>
             
-            <span className="font-mono text-xs font-black bg-[#FFE5D8] text-[#C8521A] px-3 py-1 rounded-md uppercase">
+            <span className="font-mono text-xs font-black bg-[#FFF0E7] text-[#D94F12] px-3.5 py-1 rounded-md uppercase tracking-wide">
               {customer.customerReferenceNumber}
             </span>
           </div>
         </div>
       )}
+
     </div>
   );
 }

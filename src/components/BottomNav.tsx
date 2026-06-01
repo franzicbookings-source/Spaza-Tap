@@ -23,12 +23,11 @@ export default function BottomNav({
     { id: "customers", label: "Customers", icon: Users },
   ];
 
-  // For 'More', we can show a popout menu or just go to a 'more' screen. Since "more" isn't a ScreenState,
-  // let's just make it go to a list of links. We'll add 'settings' as a default for now, but really it should open a menu.
-  // Actually, we can add "more" to ScreenState, or just use settings. Let's add "more" if we haven't. Wait, the prompt asked to put Suppliers, Purchases, Cash-up, Settings in 'More'. Let's navigate to "settings" and rename that to "More". Wait, let's create a dedicated "More" screen later.
+  const isMoreActive = ["settings", "reports", "expenses", "suppliers", "purchases", "cash_ups", "sales", "shopQrCode", "platform_analytics"].includes(currentScreen);
+
   return (
-    <nav className="fixed bottom-0 w-full bg-white border-t border-gray-200 z-40 pb-safe pb-2">
-      <div className="flex justify-around items-center px-2 py-2">
+    <nav className="w-full h-[76px] bg-white border-t border-[#2B1114]/8 rounded-t-[28px] shadow-[0_-8px_30px_rgba(43,17,20,0.06)] flex flex-col justify-center">
+      <div className="flex justify-between items-center px-4">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentScreen === item.id;
@@ -36,33 +35,49 @@ export default function BottomNav({
             <button
               key={item.id}
               onClick={() => onNavigate(item.id as ScreenState)}
-              className={`flex flex-col items-center justify-center w-16 h-12 transition-colors ${
-                isActive ? "text-[#C8521A]" : "text-gray-500"
-              }`}
+              className="flex flex-col items-center justify-center transition-all duration-300 relative group py-1"
             >
-              <Icon
-                className="w-6 h-6 mb-1"
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <span className={`text-[10px] font-bold ${isActive ? "opacity-100" : "opacity-80"}`}>
-                {item.label}
-              </span>
+              <div 
+                className={`flex flex-col items-center justify-center rounded-2xl px-3 py-1.5 transition-all duration-200 ${
+                  isActive 
+                    ? "bg-[#FFF0E7] text-[#D94F12] scale-102" 
+                    : "text-[#756766] hover:text-[#2B1114]"
+                }`}
+              >
+                <Icon
+                  className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : "stroke-2"}`}
+                />
+                <span className="text-[10px] font-extrabold tracking-wide mt-0.5 leading-none">
+                  {item.label}
+                </span>
+                {isActive && (
+                  <span className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D94F12]" />
+                )}
+              </div>
             </button>
           );
         })}
-        {/* We need a 'More' button */}
+        
+        {/* More button */}
         <button
           onClick={() => onNavigate("settings" as ScreenState)}
-          className={`flex flex-col items-center justify-center w-16 h-12 transition-colors ${
-            ["settings", "reports", "expenses", "suppliers", "purchases", "cash_ups", "sales", "shopQrCode"].includes(currentScreen)
-              ? "text-[#C8521A]"
-              : "text-gray-500"
-          }`}
+          className="flex flex-col items-center justify-center transition-all duration-300 relative group py-1"
         >
-          <Menu className="w-6 h-6 mb-1" strokeWidth={["settings", "reports", "expenses", "suppliers", "purchases", "cash_ups", "sales", "shopQrCode"].includes(currentScreen) ? 2.5 : 2} />
-          <span className={`text-[10px] font-bold ${["settings", "reports", "expenses", "suppliers", "purchases", "cash_ups", "sales", "shopQrCode"].includes(currentScreen) ? "opacity-100" : "opacity-80"}`}>
-            More
-          </span>
+          <div 
+            className={`flex flex-col items-center justify-center rounded-2xl px-3 py-1.5 transition-all duration-200 ${
+              isMoreActive 
+                ? "bg-[#FFF0E7] text-[#D94F12] scale-102" 
+                : "text-[#756766] hover:text-[#2B1114]"
+            }`}
+          >
+            <Menu className={`w-5 h-5 ${isMoreActive ? "stroke-[2.5]" : "stroke-2"}`} />
+            <span className="text-[10px] font-extrabold tracking-wide mt-0.5 leading-none">
+              More
+            </span>
+            {isMoreActive && (
+              <span className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D94F12]" />
+            )}
+          </div>
         </button>
       </div>
     </nav>

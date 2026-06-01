@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../../lib/firebase';
+import { collection, query, where, onSnapshot, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { Product, Customer } from '../../types';
-import { ShoppingCart, Search, Plus, Minus, X, CreditCard, Banknote, User } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Minus, X, CreditCard, Banknote, User, Tag, ShoppingBag, Coins } from 'lucide-react';
 
 interface TillScreenProps {
   shopId: string;
@@ -15,7 +15,7 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<{product: Product, quantity: number}[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "credit">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "credit" | string>("cash");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [msg, setMsg] = useState<{text: string, type: "success" | "error"} | null>(null);
@@ -34,7 +34,7 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
       setProducts(p);
     });
     return () => unsub();
-  }, [shopId]);
+  }, [shopId, ownerUserId]);
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.barcode && p.barcode.includes(search)));
 
@@ -54,7 +54,6 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
       }
       return [...prev, { product, quantity: 1 }];
     });
-    // Auto-clear error on successful add
     setMsg(null);
   };
 
@@ -127,7 +126,6 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
           createdAt: serverTimestamp()
         });
 
-        // Reduce stock
         const prodRef = doc(db, "products", item.product.id);
         batch.update(prodRef, {
           stockQuantity: item.product.stockQuantity - item.quantity,
@@ -153,11 +151,9 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
           updatedAt: serverTimestamp()
         });
 
-        // Also create an explicit transaction for history
         const txId = `tx_${Date.now()}_${Math.random()}`;
         const txRef = doc(db, "transactions", txId);
         
-        // Find existing owed amount from props or fetch. We only have customers prop.
         const cust = customers.find(c => c.id === selectedCustomerId);
         const prevOwed = cust ? cust.owed : 0;
         
@@ -179,7 +175,7 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
 
       setCart([]);
       setShowCheckout(false);
-      setMsg({ text: "Sale completed successfully!", type: "success" });
+      setMsg({ text: "Sale completed successfully! 🎉", type: "success" });
     } catch (e: any) {
       console.error(e);
       setMsg({ text: "Failed to complete sale: " + e.message, type: "error" });
@@ -188,168 +184,292 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F5EDE0] font-sans pb-24 md:pb-6">
-      <header className="px-6 pt-6 pb-4 bg-white shadow-sm shrink-0">
-        <h1 className="text-2xl font-black font-display text-[#3B1A1A] uppercase tracking-tighter">Till & POS</h1>
+    <div className="flex flex-col h-full bg-[#FBF5EC] font-sans pb-32">
+      
+      {/* Redesigned Top Header */}
+      <header className="px-5 pt-5 pb-4 bg-white border-b border-[#2B1114]/8 shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black font-display text-text-main uppercase tracking-tight leading-none">
+              Till & POS
+            </h1>
+            <p className="text-[10px] font-bold text-text-light uppercase tracking-wider mt-1 leading-none">
+              Checkout & Cash Register Screen
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-[#FFF0E7] text-[#D94F12] flex items-center justify-center font-display font-black text-xs">
+            {cart.length}
+          </div>
+        </div>
       </header>
       
+      {/* Toast and Alert Notification Message bars */}
       {msg && (
-        <div className={`mx-6 mt-4 p-3 rounded-lg text-sm font-bold ${msg.type === "error" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>
-          {msg.text}
-          <button onClick={() => setMsg(null)} className="float-right font-black">X</button>
+        <div className={`mx-5 mt-4 p-3.5 rounded-xl text-xs font-bold flex justify-between items-center ${msg.type === "error" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>
+          <span>{msg.text}</span>
+          <button onClick={() => setMsg(null)} className="font-bold text-sm ml-2 outline-none">✕</button>
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden flex flex-col md:flex-row gap-4 p-4 md:p-6">
-        {/* Products Section */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[2rem] shadow-sm border border-[#E8D0BB] overflow-hidden">
-          <div className="p-4 border-b border-[#E8D0BB]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+      {/* Main Multi-Column Split area */}
+      <div className="flex-1 flex flex-col md:flex-row gap-5 p-5 min-h-0">
+        
+        {/* Proximity inventory product selector */}
+        <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[24px] border border-[#2B1114]/8 overflow-hidden shadow-2xs">
+          
+          {/* Header search bar - 56px high, 18px rounded */}
+          <div className="p-3.5 border-b border-text-main/5 bg-white shrink-0">
+            <div className="relative h-14 bg-[#FBF5EC] border border-text-main/10 rounded-[18px] flex items-center px-4">
+              <Search className="text-text-muted w-5 h-5 shrink-0 mr-2.5" />
               <input 
                 type="text" 
-                placeholder="Search products or barcode..." 
+                placeholder="Search inventory, category, or barcode..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-gray-50 pl-10 pr-4 py-3 rounded-xl border-none outline-none font-bold text-sm"
+                className="w-full bg-transparent outline-none border-none text-text-main text-sm font-semibold placeholder:text-text-muted"
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4">
+
+          {/* Grid listing product catalog */}
+          <div className="flex-1 overflow-y-auto p-4.5 bg-background select-none">
             {products.length === 0 ? (
-              <div className="text-center text-gray-500 font-bold py-10">No active products found. Add them in Stock.</div>
+              <div className="text-center text-text-muted font-bold py-16 text-xs bg-white rounded-2xl border border-text-main/5">
+                No active items found. Please setup products inside inventory.
+              </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {filteredProducts.map(p => (
-                  <button 
-                    key={p.id} 
-                    onClick={() => addToCart(p)}
-                    className="flex flex-col text-left p-3 rounded-xl border border-[#E8D0BB] hover:border-[#C8521A] hover:bg-[#F5EDE0]/30 transition-colors active:scale-95"
-                  >
-                    <span className="font-bold text-[#3B1A1A] text-sm truncate">{p.name}</span>
-                    <span className="font-mono text-xs text-gray-500 mb-1">{p.stockQuantity} in stock</span>
-                    <span className="font-display font-black text-[#C8521A] mt-auto">R {p.sellingPrice.toFixed(2)}</span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-3.5">
+                {filteredProducts.map(p => {
+                  const qtyLeft = p.stockQuantity;
+                  const isLow = qtyLeft <= p.lowStockLevel;
+                  const isOut = qtyLeft <= 0;
+                  
+                  return (
+                    <button 
+                      key={p.id} 
+                      onClick={() => addToCart(p)}
+                      disabled={isOut}
+                      className={`flex flex-col text-left p-4.5 rounded-[22px] border bg-white relative transition-all active:scale-[0.98] ${
+                        isOut 
+                          ? "border-text-main/5 opacity-40 cursor-not-allowed" 
+                          : "border-text-main/10 hover:border-[#D94F12] hover:shadow-xs"
+                      }`}
+                    >
+                      <span className="font-extrabold text-text-main text-sm truncate uppercase tracking-tight leading-snug">
+                        {p.name}
+                      </span>
+                      
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Tag className="w-3.5 h-3.5 text-text-muted" />
+                        <span className={`text-[10px] font-mono leading-none ${isOut ? "text-danger" : isLow ? "text-warning" : "text-text-light font-extrabold"}`}>
+                          {isOut ? "Out of Stock" : `${qtyLeft} available`}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 pt-2.5 border-t border-text-main/5 flex justify-between items-baseline w-full">
+                        <span className="text-[9px] text-text-muted uppercase font-bold tracking-wider">Price</span>
+                        <span className="font-black text-[#D94F12] text-sm font-display tracking-tight leading-none">R {p.sellingPrice.toFixed(2)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
 
-        {/* Cart Section */}
-        <div className="w-full md:w-80 flex flex-col min-h-[300px] bg-white rounded-[2rem] shadow-sm border border-[#E8D0BB] overflow-hidden shrink-0">
-          <div className="p-4 bg-[#3B1A1A] text-white flex items-center justify-between">
-            <h2 className="font-display font-black tracking-widest uppercase text-xs">Current Cart</h2>
-            <div className="bg-[#C8521A] px-2 py-0.5 rounded-full text-xs font-bold">{cart.length}</div>
+        {/* Floating Cart checkout widget sidebar */}
+        <div className="w-full md:w-80 flex flex-col h-[320px] md:h-full bg-white rounded-[24px] border border-[#2B1114]/8 overflow-hidden shrink-0 shadow-2xs">
+          
+          <div className="p-4 bg-[#2B1114] text-white flex items-center justify-between shrink-0">
+            <h2 className="font-display font-black tracking-widest uppercase text-[10px]">Current Cart Queue</h2>
+            <div className="bg-[#D94F12] text-white px-2.5 h-6 rounded-full text-xs font-black flex items-center justify-center">
+              {cart.reduce((s, c) => s + c.quantity, 0)}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+
+          {/* Cart items list */}
+          <div className="flex-1 overflow-y-auto p-4.5 space-y-3.5 bg-background">
             {cart.length === 0 ? (
-              <div className="text-center text-gray-400 font-bold py-10 text-sm">Cart is empty</div>
+              <div className="text-center text-text-muted font-bold py-16 text-xs bg-white rounded-2xl border border-text-main/5">
+                Current cart is empty
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {cart.map(item => (
-                  <div key={item.product.id} className="flex flex-col p-2 bg-gray-50 rounded-lg">
+                  <div key={item.product.id} className="bg-white p-3.5 rounded-[18px] border border-text-main/5 shadow-2xs">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="font-bold text-[#3B1A1A] text-sm leading-tight">{item.product.name}</span>
-                      <span className="font-mono font-bold text-[#C8521A] text-sm whitespace-nowrap ml-2">
+                      <span className="font-extrabold text-text-main text-xs leading-snug uppercase tracking-tight max-w-[170px] truncate">{item.product.name}</span>
+                      <span className="font-mono font-black text-[#D94F12] text-xs leading-none">
                         R {(item.product.sellingPrice * item.quantity).toFixed(2)}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-2 py-1">
-                        <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 active:scale-75 text-gray-500"><Minus className="w-3 h-3" /></button>
-                        <span className="font-bold text-sm min-w-[1.5rem] text-center">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 active:scale-75 text-[#C8521A]"><Plus className="w-3 h-3" /></button>
+                      <div className="flex items-center gap-3.5 bg-[#FBF5EC] rounded-xl border border-text-main/5 px-2.5 py-1">
+                        <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 active:scale-75 text-text-muted hover:text-text-main"><Minus className="w-3 h-3 stroke-[2.5]" /></button>
+                        <span className="font-black text-xs text-text-main min-w-[12px] text-center font-mono">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 active:scale-75 text-[#D94F12] hover:text-[#C9460B]"><Plus className="w-3 h-3 stroke-[2.5]" /></button>
                       </div>
-                      <span className="text-[10px] text-gray-400">@ R{item.product.sellingPrice.toFixed(2)}/ea</span>
+                      <span className="text-[10px] text-text-light font-bold">@ R{item.product.sellingPrice.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="p-4 border-t border-[#E8D0BB] bg-gray-50">
+
+          {/* Total aggregate section */}
+          <div className="p-4.5 border-t border-[#2B1114]/8 bg-white shrink-0">
             <div className="flex justify-between items-end mb-4">
-              <span className="font-bold text-gray-500 uppercase text-[10px] tracking-widest">Total</span>
-              <span className="font-display font-black text-2xl text-[#3B1A1A]">R {total.toFixed(2)}</span>
+              <span className="font-extrabold text-text-muted uppercase text-[9px] tracking-widest block mb-0.5">Total Sale</span>
+              <span className="font-display font-black text-2xl text-text-main leading-none">R {total.toFixed(2)}</span>
             </div>
+            
             <button 
               disabled={cart.length === 0}
-              onClick={() => setShowCheckout(true)}
-              className="w-full h-12 bg-[#C8521A] text-white rounded-xl font-display font-bold uppercase tracking-wider shadow active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+              onClick={() => {
+                setPaymentMethod("cash");
+                setSelectedCustomerId("");
+                setShowCheckout(true);
+              }}
+              className="w-full h-[54px] bg-[#D94F12] text-white rounded-2xl font-bold uppercase tracking-wider text-xs shadow-xs active:scale-[0.98] transition-transform disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
             >
-              <ShoppingCart className="w-5 h-5" />
-              Checkout
+              <ShoppingCart className="w-4.5 h-4.5 stroke-[2.5]" />
+              <span>Checkout Queue</span>
             </button>
           </div>
+
         </div>
+
       </div>
 
-      {/* Checkout Modal */}
+      {/* REDESIGNED PAYMENTS CHECKOUT DIALOG */}
       {showCheckout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-[400px] w-full p-6 shadow-2xl relative flex flex-col max-h-[90vh]">
-            <button onClick={() => setShowCheckout(false)} className="absolute right-4 top-4 hover:bg-gray-100 p-1 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
-            <h2 className="text-xl font-black font-display text-[#3B1A1A] uppercase tracking-tight mb-6">Complete Sale</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#FBF5EC] rounded-[28px] max-w-[420px] w-full p-6 border border-[#2B1114]/8 shadow-2xl relative flex flex-col max-h-[90vh]">
             
-            <div className="text-center mb-6">
-              <div className="font-mono text-gray-500 text-xs mb-1">Total Amount</div>
-              <div className="text-4xl font-black font-display text-[#C8521A]">R {total.toFixed(2)}</div>
+            <button 
+              onClick={() => setShowCheckout(false)} 
+              className="absolute right-4 top-4 hover:bg-[#F1EBE4] p-1.5 rounded-full text-text-main outline-none active:scale-95 transition-transform"
+            >
+              <X className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            
+            <h2 className="text-base font-black font-display text-text-main uppercase tracking-tight mb-5 leading-none">Complete Sale</h2>
+            
+            <div className="text-center mb-6 bg-white border border-[#2B1114]/8 p-5 rounded-[22px] shadow-2xs">
+              <span className="text-text-muted text-[10px] uppercase font-bold tracking-wider">Gross Total Amount</span>
+              <div className="text-3xl font-black text-[#D94F12] font-display mt-1.5 leading-none">R {total.toFixed(2)}</div>
             </div>
 
-            <p className="font-bold text-xs uppercase tracking-widest text-[#3B1A1A] mb-3">Payment Method</p>
-            <div className="grid grid-cols-3 gap-2 mb-6">
+            <p className="font-black text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-0.5">Select Payment Method</p>
+            
+            {/* Custom styled large payment buttons with precise borders */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              
               <button 
                 onClick={() => setPaymentMethod("cash")}
-                className={`flex flex-col items-center justify-center h-20 rounded-xl border-2 transition-all ${paymentMethod === "cash" ? "border-[#C8521A] bg-[#C8521A]/10 text-[#C8521A]" : "border-[#E8D0BB] text-gray-500 hover:bg-gray-50"}`}
+                className={`flex flex-col items-center justify-center h-22 rounded-2xl border-2 transition-all ${
+                  paymentMethod === "cash" 
+                    ? "border-[#D94F12] bg-[#FFF0E7] text-[#D94F12] scale-102 shadow-2xs" 
+                    : "border-text-main/10 bg-white text-text-light hover:bg-[#FBF5EC]"
+                }`}
               >
-                <Banknote className="w-6 h-6 mb-1" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Cash</span>
+                <Banknote className="w-5.5 h-5.5 mb-1.5" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wide">Cash</span>
               </button>
+
               <button 
                 onClick={() => setPaymentMethod("card")}
-                className={`flex flex-col items-center justify-center h-20 rounded-xl border-2 transition-all ${paymentMethod === "card" ? "border-[#C8521A] bg-[#C8521A]/10 text-[#C8521A]" : "border-[#E8D0BB] text-gray-500 hover:bg-gray-50"}`}
+                className={`flex flex-col items-center justify-center h-22 rounded-2xl border-2 transition-all ${
+                  paymentMethod === "card" 
+                    ? "border-[#D94F12] bg-[#FFF0E7] text-[#D94F12] scale-102 shadow-2xs" 
+                    : "border-text-main/10 bg-white text-text-light hover:bg-[#FBF5EC]"
+                }`}
               >
-                <CreditCard className="w-6 h-6 mb-1" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Card/EFT</span>
+                <CreditCard className="w-5.5 h-5.5 mb-1.5" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wide">Card/EFT</span>
               </button>
+
               <button 
                 onClick={() => setPaymentMethod("credit")}
-                className={`flex flex-col items-center justify-center h-20 rounded-xl border-2 transition-all ${paymentMethod === "credit" ? "border-[#C8521A] bg-[#C8521A]/10 text-[#C8521A]" : "border-[#E8D0BB] text-gray-500 hover:bg-gray-50"}`}
+                className={`flex flex-col items-center justify-center h-22 rounded-2xl border-2 transition-all ${
+                  paymentMethod === "credit" 
+                    ? "border-[#D94F12] bg-[#FFF0E7] text-[#D94F12] scale-102 shadow-2xs" 
+                    : "border-text-main/10 bg-white text-text-light hover:bg-[#FBF5EC]"
+                }`}
               >
-                <User className="w-6 h-6 mb-1" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Customer Tab</span>
+                <User className="w-5.5 h-5.5 mb-1.5" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wide text-center leading-3">Customer<br/>Credit Tab</span>
               </button>
+
             </div>
 
+            {/* Selector list for linked customer credit accounts */}
             {paymentMethod === "credit" && (
-              <div className="mb-6 flex-1 overflow-auto">
-                <p className="font-bold text-xs uppercase tracking-widest text-[#3B1A1A] mb-2">Select Customer</p>
-                <div className="border border-[#E8D0BB] rounded-xl overflow-y-auto max-h-[150px]">
-                  {customers.map(c => (
-                    <div 
-                      key={c.id} 
-                      onClick={() => setSelectedCustomerId(c.id)}
-                      className={`p-3 border-b border-[#E8D0BB] last:border-0 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors ${selectedCustomerId === c.id ? "bg-[#F5EDE0] font-black" : "font-medium"}`}
-                    >
-                      <span className="text-sm">{c.name}</span>
-                      <span className="text-xs font-mono text-[#C8521A]">Owes: R{c.owed}</span>
+              <div className="mb-5 flex-1 min-h-0 overflow-hidden flex flex-col pr-1">
+                <p className="font-black text-[10px] uppercase tracking-wider text-text-muted mb-2.5 pl-0.5">Select Debtor Account</p>
+                <div className="border border-text-main/10 bg-white rounded-2xl overflow-y-auto max-h-[140px] divide-y divide-text-main/5 shadow-2xs">
+                  {customers.map(c => {
+                    const isSelected = selectedCustomerId === c.id;
+                    const limitVal = c.limit || 2000;
+                    const canAfford = Math.max(0, limitVal - c.owed) >= total;
+                    const statusPaused = c.creditStatus === "paused";
+                    
+                    return (
+                      <div 
+                        key={c.id} 
+                        onClick={() => {
+                          if (statusPaused) {
+                            alert("This account's credit facility is paused by owner.");
+                            return;
+                          }
+                          if (!canAfford) {
+                            alert("Sale exceeds customer's remaining available credit limit.");
+                            return;
+                          }
+                          setSelectedCustomerId(c!.id || "");
+                        }}
+                        className={`p-3 flex justify-between items-center cursor-pointer transition-colors ${
+                          isSelected 
+                            ? "bg-[#FFE9E8] font-black text-text-main" 
+                            : statusPaused || !canAfford 
+                              ? "opacity-40 bg-zinc-50 cursor-not-allowed" 
+                              : "hover:bg-[#FBF5EC]"
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-extrabold uppercase tracking-tight">{c.name}</span>
+                          <span className="text-[9px] text-text-muted font-mono uppercase">Limit: R{limitVal}</span>
+                        </div>
+                        <span className="text-xs font-mono font-black text-danger">Owes: R{c.owed.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  
+                  {customers.length === 0 && (
+                    <div className="p-4 text-center text-xs text-text-muted italic">
+                      No active customer accounts registered.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
 
+            {/* Primary checkout button height 60, rounded-2xl (rounded-2xl is equivalent to rounded-[16px]) */}
             <button
               onClick={handleCheckout}
               disabled={isProcessing}
-              className="mt-auto w-full h-14 bg-[#3B1A1A] text-white rounded-full font-display font-black text-sm uppercase tracking-wider shadow active:scale-95 transition-all disabled:opacity-50"
+              className="mt-4 w-full h-[60px] bg-burgundy hover:bg-[#2B1114] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-xs active:scale-95 disabled:opacity-40"
             >
-              {isProcessing ? "Processing..." : "Confirm & Pay"}
+              {isProcessing ? "Processing Sale..." : "Confirm Checkout"}
             </button>
+
           </div>
         </div>
       )}
+
     </div>
   );
 }
