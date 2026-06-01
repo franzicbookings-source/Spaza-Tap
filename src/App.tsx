@@ -375,7 +375,10 @@ export default function App() {
           if (userData.role === role) {
             await loadUserProfile(uid);
           } else {
-            alert(`This account is already registered as a ${userData.role === 'customer' ? 'Customer' : 'Shop Owner'}. Please use the correct login.`);
+            const mismatchMsg = userData.role === 'customer'
+              ? "This account is registered as a Customer. Please use the correct portal."
+              : "This account is registered as a Shop Owner. Please use the correct portal.";
+            alert(mismatchMsg);
             await signOut(auth);
           }
         } else {
@@ -789,7 +792,10 @@ export default function App() {
         const userData = userDoc.data();
         if (userData.role !== role) {
           await signOut(auth);
-          return `This account is already registered as a ${userData.role === 'customer' ? 'Customer' : 'Shop Owner'}. Please use the correct login.`;
+          const mismatchMsg = userData.role === 'customer'
+            ? "This account is registered as a Customer. Please use the correct portal."
+            : "This account is registered as a Shop Owner. Please use the correct portal.";
+          return mismatchMsg;
         }
         const loaded = await loadUserProfile(uid);
         if (!loaded) { // Attempt recovery if load failed
@@ -997,21 +1003,6 @@ export default function App() {
 
   const handlePasswordReset = async (email: string): Promise<string | null> => {
     try {
-      const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const resetRef = doc(db, "password_resets", safeEmail);
-      const resetDoc = await getDoc(resetRef);
-      
-      const now = Date.now();
-      const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-      
-      if (resetDoc.exists()) {
-        const data = resetDoc.data();
-        if (data.lastRequestedAt && now - data.lastRequestedAt < ONE_WEEK_MS) {
-          return "You can only request a password reset once per week. Please try again later or check your email.";
-        }
-      }
-      
-      await setDoc(resetRef, { lastRequestedAt: now, email: email.toLowerCase() }, { merge: true });
       await sendPasswordResetEmail(auth, email);
       return null;
     } catch (e: any) {

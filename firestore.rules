@@ -18,7 +18,8 @@ service cloud.firestore {
 
     match /shops/{shopId} {
       allow create: if isAuthenticated() && request.resource.data.ownerUserId == request.auth.uid; 
-      allow read: if isAuthenticated(); // restricted to authenticated users
+      // TEMPORARY RISK: Public read is allowed to facilitate guest QR code / shop code lookup to display the shop name before signup.
+      allow read: if true; 
       allow update: if isAuthenticated() && resource.data.ownerUserId == request.auth.uid;
     }
 
@@ -83,9 +84,7 @@ service cloud.firestore {
       );
     }
     match /password_resets/{emailId} {
-      allow get: if true;
-      allow list: if false;
-      allow create, update: if request.resource.data.email is string && (request.auth == null || request.auth.token.email.lower() == request.resource.data.email.lower());
+      allow read, write: if false;
     }
 
     match /products/{id} {
