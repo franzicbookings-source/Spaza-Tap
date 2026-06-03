@@ -30,7 +30,7 @@ export default function SalesScreen({ shopId, ownerUserId }: SalesScreenProps) {
   // Load Customers for mapping customer identifiers to human names
   useEffect(() => {
     if (!shopId) return;
-    const qC = query(collection(db, "customers"), where("shopId", "==", shopId));
+    const qC = query(collection(db, "customers"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsubC = onSnapshot(qC, (snap) => {
       const list: Customer[] = [];
       snap.forEach(d => {
@@ -46,7 +46,7 @@ export default function SalesScreen({ shopId, ownerUserId }: SalesScreenProps) {
     .reduce((sum, s) => sum + s.totalAmount, 0);
 
   return (
-    <div className="flex flex-col h-full bg-[#FBF5EC] font-sans pb-32 relative text-text-main">
+    <div className="flex flex-col min-h-full bg-[#FBF5EC] font-sans pb-32 relative text-text-main">
       
       {/* Premium Header */}
       <header className="px-5 pt-5 pb-4 bg-white border-b border-[#2B1114]/8 shrink-0">
@@ -85,7 +85,7 @@ export default function SalesScreen({ shopId, ownerUserId }: SalesScreenProps) {
         </h3>
 
         {/* Transaction cards feed */}
-        <div className="space-y-3 pb-8">
+        <div className="flex flex-col gap-4 pb-8">
           {sales.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-text-main/5">
               <History className="mx-auto w-10 h-10 mb-2.5 text-text-muted" />
@@ -106,9 +106,9 @@ export default function SalesScreen({ shopId, ownerUserId }: SalesScreenProps) {
               }
 
               return (
-                <div key={sale.id} className="bg-white p-5 rounded-[24px] border border-text-main/10 shadow-2xs flex justify-between items-center relative overflow-hidden transition-all hover:border-[#D94F12]/20">
+                <div key={sale.id} className="bg-white p-5 rounded-[24px] border border-text-main/10 flex justify-between items-center relative">
                   
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     {/* Visual icon badge */}
                     <div className="w-10 h-10 rounded-xl bg-[#FFF0E7] flex items-center justify-center shrink-0">
                       {sale.paymentMethod === "credit" ? (
@@ -121,22 +121,22 @@ export default function SalesScreen({ shopId, ownerUserId }: SalesScreenProps) {
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <span className="font-extrabold text-sm text-text-main uppercase tracking-tight leading-snug truncate max-w-[160px]">
+                      <span className="font-extrabold text-sm text-text-main uppercase tracking-tight leading-snug truncate">
                         {typeLabel}
                       </span>
                       
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-text-light font-mono font-bold leading-none">{formatTxDate(sale.saleDate)}</span>
+                      <div className="flex items-center gap-2 mt-1 min-w-0">
+                        <span className="text-[10px] text-text-light font-mono font-bold leading-none truncate">{formatTxDate(sale.saleDate)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Price info right block */}
-                  <div className="text-right pl-2">
-                    <span className="font-display font-black text-text-main text-base block leading-none">
+                  <div className="text-right pl-2 shrink-0">
+                    <span className="font-display font-black text-text-main text-base block leading-none truncate">
                       R {sale.totalAmount.toFixed(2)}
                     </span>
-                    <span className="text-[8px] text-text-muted font-mono font-extrabold block mt-1 uppercase tracking-wider">
+                    <span className="text-[8px] text-text-muted font-mono font-extrabold block mt-1 uppercase tracking-wider truncate">
                       {sale.paymentMethod}
                     </span>
                   </div>

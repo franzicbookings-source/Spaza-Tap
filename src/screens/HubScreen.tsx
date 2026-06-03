@@ -24,12 +24,12 @@ export default function HubScreen({ onNavigate, shopId, ownerUserId, account }: 
     // Quick load counts
     const loadBadges = async () => {
       // open incidents
-      const incQ = query(collection(db, "incident_reports"), where("shopId", "==", shopId), where("status", "==", "Open"));
+      const incQ = query(collection(db, "incident_reports"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId), where("status", "==", "Open"));
       const incSnap = await getDocs(incQ);
       setOpenIncidents(incSnap.docs.length);
 
       // alerts
-      const altQ = query(collection(db, "important_alerts"), where("shopId", "==", shopId));
+      const altQ = query(collection(db, "important_alerts"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
       let count = 0;
       const altSnap = await getDocs(altQ);
       altSnap.forEach(doc => {
@@ -41,7 +41,7 @@ export default function HubScreen({ onNavigate, shopId, ownerUserId, account }: 
 
       // food safety today
       const todayStr = new Date().toISOString().split('T')[0];
-      const fQ = query(collection(db, "food_safety_checks"), where("shopId", "==", shopId));
+      const fQ = query(collection(db, "food_safety_checks"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
       let done = false;
       const fSnap = await getDocs(fQ);
       fSnap.forEach(doc => {
@@ -76,7 +76,7 @@ export default function HubScreen({ onNavigate, shopId, ownerUserId, account }: 
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#F5EDE0] font-sans pb-24 md:pb-6 relative overflow-y-auto">
+    <div className="flex flex-col min-h-full bg-[#F5EDE0] font-sans pb-24 md:pb-6 relative">
       <header className="px-6 pt-6 pb-4 bg-white shadow-sm shrink-0 flex justify-between items-start relative">
         <div className="pr-4">
           <h1 className="text-xl md:text-2xl font-black font-display text-[#3B1A1A] uppercase tracking-tighter">Help & Compliance Hub</h1>

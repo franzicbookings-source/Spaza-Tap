@@ -69,7 +69,7 @@ export default function ExpensesScreen({ shopId, ownerUserId }: ExpensesScreenPr
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   return (
-    <div className="flex flex-col h-full bg-[#F5EDE0] font-sans pb-24 md:pb-6 relative">
+    <div className="flex flex-col min-h-full bg-[#F5EDE0] font-sans pb-24 md:pb-6 relative">
       <header className="px-6 pt-6 pb-4 bg-white shadow-sm shrink-0 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-black font-display text-[#3B1A1A] uppercase tracking-tighter">Expenses</h1>

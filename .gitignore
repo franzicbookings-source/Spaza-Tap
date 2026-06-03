@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+serviceAccountKey.json
+*.key.json
+spaza-tap-backup-before-cleanup-*

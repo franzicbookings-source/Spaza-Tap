@@ -33,7 +33,7 @@ export function EmergencyScreen({ onBack, shopId, ownerUserId, account }: { onBa
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "emergency_contacts"), where("shopId", "==", shopId));
+    const q = query(collection(db, "emergency_contacts"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const arr: EmergencyContact[] = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() } as EmergencyContact));
@@ -129,7 +129,7 @@ export function MunicipalityScreen({ onBack, shopId, ownerUserId, account }: { o
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "municipality_contacts"), where("shopId", "==", shopId));
+    const q = query(collection(db, "municipality_contacts"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       if (!snap.empty) {
         setMc({ id: snap.docs[0].id, ...snap.docs[0].data() } as MunicipalityContact);
@@ -243,7 +243,7 @@ export function GovSupportScreen({ onBack, shopId, ownerUserId, account }: { onB
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "gov_support_applications"), where("shopId", "==", shopId));
+    const q = query(collection(db, "gov_support_applications"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const records: Record<string, string> = {};
       snap.forEach(d => {
@@ -701,7 +701,7 @@ export function DocumentsScreen({ onBack, shopId, ownerUserId, account }: { onBa
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "shop_documents"), where("shopId", "==", shopId));
+    const q = query(collection(db, "shop_documents"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const arr: any[] = [];
       snap.forEach(d => {
@@ -884,7 +884,7 @@ export function RemindersScreen({ onBack, shopId, ownerUserId, account }: { onBa
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "reminders"), where("shopId", "==", shopId));
+    const q = query(collection(db, "reminders"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const arr: any[] = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
@@ -1014,7 +1014,7 @@ export function IncidentsScreen({ onBack, shopId, ownerUserId, account }: { onBa
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "incident_reports"), where("shopId", "==", shopId));
+    const q = query(collection(db, "incident_reports"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const arr: any[] = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
@@ -1435,7 +1435,7 @@ export function AlertsScreen({ onBack, shopId, ownerUserId, account }: { onBack:
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "important_alerts"), where("shopId", "==", shopId));
+    const q = query(collection(db, "important_alerts"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const arr: any[] = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() }));

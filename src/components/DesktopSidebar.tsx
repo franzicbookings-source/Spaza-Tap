@@ -46,18 +46,16 @@ export default function DesktopSidebar({ currentScreen, onNavigate, onLogout, sh
     <aside className="w-64 bg-[#3B1A1A] text-[#F5EDE0] flex-col justify-between hidden md:flex min-h-screen sticky top-0 shrink-0 border-r border-[#E5DACB] overflow-y-auto">
       <div>
         <div className="p-6 pb-8 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
-              <span className="absolute font-black text-[8px] text-[#F5EDE0] leading-tight text-center">ST</span>
+          <div className="flex items-center mb-1">
+            <div className="h-9 flex items-center bg-transparent shrink-0">
               <img 
                 src="/icons/spaza-tap-logo.png" 
-                alt="" 
-                className="w-full h-full object-contain relative z-10"
+                alt="Spaza Tap" 
+                className="h-full w-auto object-contain relative z-10"
                 referrerPolicy="no-referrer"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
-            <span className="font-display font-black text-xl tracking-tight leading-none uppercase">Spaza Tap</span>
           </div>
           <p className="text-[10px] font-mono text-white/50 tracking-wider">LEDGER &bull; SP</p>
         </div>

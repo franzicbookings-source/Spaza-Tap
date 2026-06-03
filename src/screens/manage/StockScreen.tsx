@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Product } from '../../types';
-import { Plus, Search, Tag, X, AlertTriangle, Package, Layers, Activity, ChevronRight, Bookmark } from 'lucide-react';
+import { Plus, Search, Tag, X, AlertTriangle, Package, Layers, Activity, ChevronRight, Bookmark, CheckSquare, Check } from 'lucide-react';
 
 interface StockScreenProps {
   shopId: string;
@@ -14,6 +14,12 @@ export default function StockScreen({ shopId, ownerUserId }: StockScreenProps) {
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [isBulkEditMode, setIsBulkEditMode] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [bulkEditType, setBulkEditType] = useState<'sellingPrice' | 'stockQuantity' | null>(null);
+  const [bulkEditValue, setBulkEditValue] = useState("");
   
   const [form, setForm] = useState({
     name: "",
@@ -39,6 +45,40 @@ export default function StockScreen({ shopId, ownerUserId }: StockScreenProps) {
   const filteredProducts = products.filter(p => (p.name || "").toLowerCase().includes(search.toLowerCase()) || (p.category || "").toLowerCase().includes(search.toLowerCase()));
   const lowStockCount = products.filter(p => (p.stockQuantity || 0) <= (p.lowStockLevel || 0)).length;
   const activeCount = products.filter(p => p.isActive).length;
+
+  const toggleSelection = (id: string) => {
+    setSelectedProductIds(prev => 
+      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkEditType || !bulkEditValue || selectedProductIds.length === 0) return;
+    
+    setIsSaving(true);
+    try {
+      const batch = writeBatch(db);
+      selectedProductIds.forEach(id => {
+        const prodRef = doc(db, "products", id);
+        batch.update(prodRef, {
+          [bulkEditType]: bulkEditType === 'sellingPrice' ? parseFloat(bulkEditValue) : parseInt(bulkEditValue, 10),
+          updatedAt: serverTimestamp()
+        });
+      });
+      await batch.commit();
+      
+      setShowBulkEditModal(false);
+      setIsBulkEditMode(false);
+      setSelectedProductIds([]);
+      setBulkEditValue("");
+      setBulkEditType(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to perform bulk update");
+    }
+    setIsSaving(false);
+  };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +115,7 @@ export default function StockScreen({ shopId, ownerUserId }: StockScreenProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#FBF5EC] font-sans pb-32 relative text-text-main">
+    <div className="flex flex-col min-h-full bg-[#FBF5EC] font-sans pb-32 relative text-text-main">
       
       {/* Redesigned Header */}
       <header className="px-5 pt-5 pb-4 bg-white border-b border-[#2B1114]/8 shrink-0 flex justify-between items-center">
@@ -83,13 +123,25 @@ export default function StockScreen({ shopId, ownerUserId }: StockScreenProps) {
           <h1 className="text-xl font-black font-display uppercase tracking-tight leading-none text-text-main">Stock</h1>
           <p className="text-[10px] font-bold text-text-light uppercase tracking-wider mt-1.5 leading-none">Track your inventory and stock levels.</p>
         </div>
-        <button 
-          onClick={() => setShowAdd(true)}
-          className="bg-[#D94F12] text-white p-3 rounded-full shadow-[0_4px_12px_rgba(217,79,18,0.2)] hover:bg-[#C9460B] active:scale-95 transition-transform"
-          title="Add New Stock"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => {
+              setIsBulkEditMode(!isBulkEditMode);
+              if (isBulkEditMode) setSelectedProductIds([]);
+            }}
+            className={`p-3 rounded-full transition-transform active:scale-95 ${isBulkEditMode ? 'bg-[#2B1114] text-white shadow-2xs' : 'bg-[#FBF5EC] text-text-main hover:bg-[#EBE2D4]'}`}
+            title="Bulk Edit Mode"
+          >
+            <CheckSquare className="w-5 h-5 stroke-[2]" />
+          </button>
+          <button 
+            onClick={() => setShowAdd(true)}
+            className="bg-[#D94F12] text-white p-3 rounded-full shadow-[0_4px_12px_rgba(217,79,18,0.2)] hover:bg-[#C9460B] active:scale-95 transition-transform"
+            title="Add New Stock"
+          >
+            <Plus className="w-5 h-5 stroke-[2.5]" />
+          </button>
+        </div>
       </header>
 
       <div className="p-5 space-y-4">
@@ -162,19 +214,36 @@ export default function StockScreen({ shopId, ownerUserId }: StockScreenProps) {
               const isOut = p.stockQuantity <= 0;
               
               return (
-                <div key={p.id} className="bg-white p-5 rounded-[24px] border border-text-main/10 shadow-2xs space-y-4">
+                <div 
+                  key={p.id} 
+                  onClick={() => {
+                    if (isBulkEditMode) toggleSelection(p.id);
+                  }}
+                  className={`bg-white p-5 rounded-[24px] border shadow-2xs space-y-4 transition-all ${
+                    isBulkEditMode ? 'cursor-pointer select-none active:scale-[0.98]' : ''
+                  } ${
+                    selectedProductIds.includes(p.id) ? 'border-[#D94F12] ring-2 ring-[#D94F12]/20' : 'border-text-main/10'
+                  }`}
+                >
                   
                   {/* Top row elements */}
                   <div className="flex justify-between items-start gap-2">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-extrabold text-sm uppercase text-text-main tracking-tight font-sans block">{p.name}</span>
-                        <span className="text-[8px] font-extrabold px-2 py-0.5 rounded-full border bg-[#FBF5EC] text-text-light uppercase tracking-wider">{p.category}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5 text-[10px] text-text-light leading-none">
-                        <Bookmark className="w-3.5 h-3.5 text-text-muted" />
-                        <span>Ref ID: <span className="font-mono font-bold tracking-wider">{p.sku || p.barcode || "No Code"}</span></span>
+                    <div className="flex flex-row items-start gap-3">
+                      {isBulkEditMode && (
+                        <div className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center mt-0.5 transition-colors ${selectedProductIds.includes(p.id) ? 'bg-[#D94F12] border-[#D94F12]' : 'border-text-main/20 bg-[#FBF5EC]'}`}>
+                          {selectedProductIds.includes(p.id) && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-extrabold text-sm uppercase text-text-main tracking-tight font-sans block">{p.name}</span>
+                          <span className="text-[8px] font-extrabold px-2 py-0.5 rounded-full border bg-[#FBF5EC] text-text-light uppercase tracking-wider">{p.category}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 text-[10px] text-text-light leading-none">
+                          <Bookmark className="w-3.5 h-3.5 text-text-muted" />
+                          <span>Ref ID: <span className="font-mono font-bold tracking-wider">{p.sku || p.barcode || "No Code"}</span></span>
+                        </div>
                       </div>
                     </div>
 
@@ -307,9 +376,82 @@ export default function StockScreen({ shopId, ownerUserId }: StockScreenProps) {
               <button 
                 type="submit" 
                 disabled={isSaving}
-                className="w-full h-14 bg-burgundy hover:bg-[#2B1114] text-white rounded-full font-bold text-xs uppercase tracking-wider shadow-xs mt-4"
+                className="w-full h-14 bg-burgundy hover:bg-[#2B1114] text-white rounded-full font-bold text-xs uppercase tracking-wider shadow-xs mt-4 disabled:opacity-50"
               >
                 {isSaving ? "Saving details..." : "Save Product Into Stock"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {isBulkEditMode && selectedProductIds.length > 0 && (
+        <div className="fixed bottom-[88px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[400px] bg-[#2B1114] text-white p-4 rounded-[24px] shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 animate-slide-up z-20 border border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-[#D94F12] text-white flex items-center justify-center font-black text-sm">
+              {selectedProductIds.length}
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider">Items Selected</span>
+          </div>
+          
+          <div className="flex gap-2 w-full md:w-auto">
+            <button 
+              onClick={() => { setBulkEditType('sellingPrice'); setBulkEditValue(""); setShowBulkEditModal(true); }}
+              className="flex-1 bg-white/10 hover:bg-white/20 px-4 py-2.5 rounded-[12px] text-white text-[10px] font-black uppercase tracking-wider active:scale-95 transition-all"
+            >
+              Update Price
+            </button>
+            <button 
+              onClick={() => { setBulkEditType('stockQuantity'); setBulkEditValue(""); setShowBulkEditModal(true); }}
+              className="flex-1 bg-white hover:bg-gray-100 px-4 py-2.5 rounded-[12px] text-[#2B1114] text-[10px] font-black uppercase tracking-wider active:scale-95 transition-all"
+            >
+              Update Stock
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Update Modal */}
+      {showBulkEditModal && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#FBF5EC] w-full rounded-t-[28px] p-6 shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto border-t border-[#2B1114]/15">
+            <div className="flex justify-between items-center mb-5 shrink-0">
+              <h2 className="text-base font-black font-display text-text-main uppercase tracking-tight">
+                Bulk Update: {bulkEditType === 'sellingPrice' ? 'Selling Price' : 'Stock Quantity'}
+              </h2>
+              <button 
+                onClick={() => setShowBulkEditModal(false)} 
+                className="p-1.5 bg-white/60 rounded-full active:scale-95 text-text-main"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleBulkUpdate} className="space-y-4">
+              <div className="p-4 bg-white rounded-[16px] border border-text-main/10 shadow-2xs flex items-center justify-between mb-4">
+                 <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Items Being Updated</span>
+                 <span className="font-display font-black text-base text-[#D94F12]">{selectedProductIds.length}</span>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-[#D94F12] uppercase tracking-wider block mb-1">
+                  New {bulkEditType === 'sellingPrice' ? 'Selling Price (R)' : 'Stock Quantity'}
+                </label>
+                <input 
+                  type="number" step={bulkEditType === 'sellingPrice' ? "0.01" : "1"} required
+                  value={bulkEditValue} onChange={e => setBulkEditValue(e.target.value)}
+                  className="w-full h-14 bg-white border border-text-main/10 rounded-xl px-4 text-sm font-bold outline-none font-mono text-text-main" 
+                  placeholder={bulkEditType === 'sellingPrice' ? "0.00" : "0"}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[16px] font-black text-xs uppercase tracking-wider shadow-xs mt-4 disabled:opacity-50"
+              >
+                {isSaving ? "Updating..." : "Confirm Update"}
               </button>
             </form>
           </div>

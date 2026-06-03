@@ -40,7 +40,7 @@ export default function DashboardScreen({
     const startOfToday = new Date();
     startOfToday.setHours(0,0,0,0);
     
-    const qS = query(collection(db, "sales"), where("shopId", "==", shopId));
+    const qS = query(collection(db, "sales"), where("shopId", "==", shopId), where("ownerUserId", "==", auth.currentUser?.uid || ""));
     const unsubS = onSnapshot(qS, (snap) => {
       let total = 0;
       let cash = 0;
@@ -62,7 +62,7 @@ export default function DashboardScreen({
     });
 
     // Load low stock products
-    const qP = query(collection(db, "products"), where("shopId", "==", shopId));
+    const qP = query(collection(db, "products"), where("shopId", "==", shopId), where("ownerUserId", "==", auth.currentUser?.uid || ""));
     const unsubP = onSnapshot(qP, (snap) => {
       const items: Product[] = [];
       snap.forEach(d => {
@@ -117,12 +117,11 @@ export default function DashboardScreen({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             {/* Logo Shop Mark */}
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
-              <span className="absolute font-black text-[10px] text-[#3B1A1A] leading-tight text-center">Spaza<br/>Tap</span>
+            <div className="h-9 flex items-center bg-transparent shrink-0">
               <img 
                 src="/icons/spaza-tap-logo.png" 
-                alt="" 
-                className="w-full h-full object-contain relative z-10"
+                alt="Spaza Tap" 
+                className="h-full w-auto object-contain relative z-10"
                 referrerPolicy="no-referrer"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />

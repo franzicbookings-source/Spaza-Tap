@@ -73,6 +73,9 @@ const KEY_ROLE = "spaza_tap_role";
 const KEY_CUSTOMER_ID = "spaza_tap_customer_id";
 const KEY_SHOP_DETAILS = "spaza_tap_shop_details";
 
+const KEY_LAST_SCREEN = "spaza_tap_last_screen";
+const KEY_SELECTED_CUSTOMER_ID = "spaza_tap_selected_customer_id";
+
 const OLD_KEY_ACCOUNT = "cwebezela_account";
 const OLD_KEY_ROLE = "cwebezela_role";
 const OLD_KEY_CUSTOMER_ID = "cwebezela_customer_id";
@@ -108,15 +111,82 @@ const removeLocalStorageItems = () => {
   localStorage.removeItem(OLD_KEY_ROLE);
   localStorage.removeItem(OLD_KEY_CUSTOMER_ID);
   localStorage.removeItem(OLD_KEY_SHOP_DETAILS);
+  localStorage.removeItem(KEY_LAST_SCREEN);
+  localStorage.removeItem(KEY_SELECTED_CUSTOMER_ID);
+};
+
+const RESTORABLE_OWNER_SCREENS: ScreenState[] = [
+  "dashboard",
+  "promos",
+  "sales",
+  "till",
+  "stock",
+  "expenses",
+  "suppliers",
+  "purchases",
+  "cash_ups",
+  "customers",
+  "customerProfile",
+  "addCredit",
+  "newCustomer",
+  "reports",
+  "settings",
+  "shopQrCode",
+  "customerAccessRequests",
+  "hub",
+  "emergency",
+  "municipality",
+  "govSupport",
+  "compliance",
+  "tax",
+  "businessReg",
+  "documents",
+  "reminders",
+  "incidents",
+  "foodSafety",
+  "funding",
+  "helpAppChecklist",
+  "alerts",
+  "officialProfile",
+  "priceWatch",
+  "platform_analytics"
+];
+
+const getSavedOwnerScreen = (): ScreenState | null => {
+  const hashScreen = window.location.hash.replace("#", "") as ScreenState;
+
+  if (RESTORABLE_OWNER_SCREENS.includes(hashScreen)) {
+    return hashScreen;
+  }
+
+  const savedScreen = localStorage.getItem(KEY_LAST_SCREEN) as ScreenState | null;
+
+  if (savedScreen && RESTORABLE_OWNER_SCREENS.includes(savedScreen)) {
+    return savedScreen;
+  }
+
+  return null;
 };
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>(() => {
     const cachedRole = getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE);
-    if (cachedRole === "customer") return "customerDashboard";
-    return getLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT) ? "dashboard" : "welcome";
+    const cachedAccount = getLocalStorageItem(KEY_ACCOUNT, OLD_KEY_ACCOUNT);
+    const cachedCustomerId = getLocalStorageItem(KEY_CUSTOMER_ID, OLD_KEY_CUSTOMER_ID);
+
+    if (cachedRole === "customer" && cachedCustomerId) {
+      return "customerDashboard";
+    }
+
+    if (cachedAccount) {
+      return getSavedOwnerScreen() || "dashboard";
+    }
+
+    return "welcome";
   });
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(() => {
+    return localStorage.getItem(KEY_SELECTED_CUSTOMER_ID);
+  });
 
   const [userRole, setUserRole] = useState<"shop_owner" | "customer" | null>(() => {
     return (getLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE) as any) || null;
@@ -688,12 +758,26 @@ export default function App() {
     if (userRole === "customer" && screen !== "customerDashboard" && screen !== "customerRequestStatus" && screen !== "welcome" && screen !== "customerJoin") {
         return;
     }
+    
     setCurrentScreen(screen);
+    
+    if (userRole === "shop_owner" && RESTORABLE_OWNER_SCREENS.includes(screen)) {
+      localStorage.setItem(KEY_LAST_SCREEN, screen);
+      window.history.replaceState({}, document.title, `#${screen}`);
+    }
+
+    if (screen === "welcome") {
+      localStorage.removeItem(KEY_LAST_SCREEN);
+      localStorage.removeItem(KEY_SELECTED_CUSTOMER_ID);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     window.scrollTo(0, 0);
   };
 
   const viewCustomer = (id: string) => {
     setSelectedCustomerId(id);
+    localStorage.setItem(KEY_SELECTED_CUSTOMER_ID, id);
     navigateTo("customerProfile");
   };
 
@@ -1055,66 +1139,36 @@ export default function App() {
     fullName: string,
     phone: string,
     email: string,
-    pin: string,
-    referenceNumber: string
+    pin: string
   ): Promise<string | null> => {
     try {
-      // 1. Search Firestore for a customer record with that customer reference number.
-      const { getDocs } = await import("firebase/firestore");
-      const q = query(
-        collection(db, "customers"),
-        where("customerReferenceNumber", "==", referenceNumber)
-      );
-      const customerQuerySnap = await getDocs(q);
-      
-      if (customerQuerySnap.empty) {
-        return "Invalid reference number. Please check with the shop owner.";
-      }
-      
-      const customerDocSec = customerQuerySnap.docs[0];
-      const customerData = customerDocSec.data();
-      
-      if (customerData.linkedCustomerUserId) {
-        return "This customer account is already linked.";
-      }
-
-      // 2. Create a Firebase Auth user for the customer.
+      // 1. Create a Firebase Auth user for the customer.
       const userCred = await createUserWithEmailAndPassword(auth, email, pin);
       const uid = userCred.user.uid;
 
-      // 3. Update customer record with linkedCustomerUserId.
-      const customerDocRef = doc(db, "customers", customerDocSec.id);
-      
-      const batch = writeBatch(db);
-      batch.update(customerDocRef, {
-        linkedCustomerUserId: uid,
-        updatedAt: serverTimestamp()
-      });
-
-      // 4. Create user record in users/{uid}
+      // 2. Create user record in users/{uid}
       const userRef = doc(db, "users", uid);
-      batch.set(userRef, {
+      await setDoc(userRef, {
         uid: uid,
         email: email,
         displayName: fullName,
         phoneNumber: phone,
         role: "customer",
-        customerId: customerDocSec.id,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-
-      await batch.commit();
       
       // Load user profile
       setUserRole("customer");
       setLocalStorageItem(KEY_ROLE, OLD_KEY_ROLE, "customer");
-      await loadUserProfile(uid);
-      
+      setCurrentScreen("welcome"); // Since they aren't linked yet, let them go to Welcome/Join screen
       return null;
     } catch (e: any) {
-      if (e.code === 'auth/email-already-in-use') return "This email is already registered. Please go back and select 'Log In' instead of 'Register'.";
-      return e.message || "Failed to sign up customer.";
+      console.error(e);
+      if (e.code === 'auth/email-already-in-use') return "An account with this email already exists. Please log in.";
+      if (e.code === 'auth/weak-password') return "Weak password. Please use at least 6 characters.";
+      if (e.code === 'auth/account-exists-with-different-credential') return "This email already exists with a different sign-in method. Please use the original method or link your account.";
+      return "Incorrect email or password.";
     }
   };
 
@@ -1623,8 +1677,8 @@ export default function App() {
       <div 
         className={
           isDesktopOwner
-            ? "w-full bg-background text-on-background min-h-[100dvh] flex flex-row overflow-hidden relative shadow-sm"
-            : "w-full max-w-[480px] bg-background text-on-background min-h-[100dvh] md:min-h-[850px] md:h-[850px] md:border md:border-outline-variant md:rounded-3xl overflow-hidden relative flex flex-col shadow-sm"
+            ? "w-full bg-background text-on-background min-h-[100svh] flex flex-row overflow-hidden relative shadow-sm"
+            : "w-full max-w-[480px] bg-background text-on-background min-h-[100svh] md:min-h-[850px] md:h-[850px] md:overflow-hidden md:border md:border-outline-variant md:rounded-3xl relative flex flex-col shadow-sm"
         }
       >
         {isDesktopOwner && (
@@ -1635,7 +1689,7 @@ export default function App() {
             shopName={currentAccount?.shopName || "Shop"} 
           />
         )}
-        <div className={`flex-1 w-full overflow-y-auto overflow-x-hidden relative no-scrollbar ${!isDesktopOwner || (currentScreen !== "welcome" && currentScreen !== "customerProfile" && currentScreen !== "addCredit" && currentScreen !== "newCustomer" && currentScreen !== "customerDashboard" && currentScreen !== "customerJoin" && currentScreen !== "customerRequestStatus" && currentScreen !== "shopQrCode" && currentScreen !== "customerAccessRequests") ? (isDesktopOwner ? "md:pb-0 pb-[60px]" : "pb-[60px]") : "" }`}>
+        <div className={`flex-1 w-full overflow-x-hidden md:overflow-y-auto relative no-scrollbar ${!isDesktopOwner || (currentScreen !== "welcome" && currentScreen !== "customerProfile" && currentScreen !== "addCredit" && currentScreen !== "newCustomer" && currentScreen !== "customerDashboard" && currentScreen !== "customerJoin" && currentScreen !== "customerRequestStatus" && currentScreen !== "shopQrCode" && currentScreen !== "customerAccessRequests") ? (isDesktopOwner ? "md:pb-0 pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-[calc(7rem+env(safe-area-inset-bottom))]") : "" }`}>
           {currentScreen === "welcome" && (
             <WelcomeScreen 
               onLogin={handleLogin} 
@@ -1760,8 +1814,10 @@ export default function App() {
               defaultLimit={currentAccount?.defaultLimit || 500}
             />
           )}
-          {currentScreen === "reports" && (
+          {currentScreen === "reports" && currentAccount && auth.currentUser && (
             <ReportsScreen
+              shopId={currentAccount.id}
+              ownerUserId={auth.currentUser.uid}
               customers={customers}
               transactions={transactions}
               onNavigate={navigateTo}

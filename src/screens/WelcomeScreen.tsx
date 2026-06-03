@@ -248,14 +248,13 @@ export default function WelcomeScreen({
           >
             {/* Top Brand Header Row */}
             <div className="flex items-center justify-between w-full py-1">
-              <div className="flex items-center gap-3">
-                {/* 72x72 Premium rounded Logo App Icon */}
-                <div className="w-[72px] h-[72px] overflow-hidden flex items-center justify-center bg-transparent shrink-0 relative">
-                  <span className="absolute font-black text-sm text-[#3B1A1A] leading-tight text-center">Spaza<br/>Tap</span>
+              <div className="flex items-center">
+                {/* Premium Background-Free Brand Logo */}
+                <div className="h-11 md:h-12 flex items-center bg-transparent shrink-0">
                   <img 
                     src="/icons/spaza-tap-logo.png" 
-                    alt="" 
-                    className="w-full h-full object-contain relative z-10"
+                    alt="Spaza Tap" 
+                    className="h-full w-auto object-contain relative z-10"
                     referrerPolicy="no-referrer"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
@@ -285,12 +284,18 @@ export default function WelcomeScreen({
 
             {/* Responsive Hero Image Card with smiling woman */}
             <div className="mt-5 w-full h-[190px] md:h-[240px] rounded-[28px] overflow-hidden border border-text-main/8 shadow-xs">
-              <img
-                src="/smiling_woman_in_cozy_workspace.png"
-                alt="Run your Spaza shop with confidence"
-                className="w-full h-full object-cover object-[center_42%]"
-                referrerPolicy="no-referrer"
-              />
+              <picture>
+                <source srcSet="/images/shop-owner-hero.webp" type="image/webp" />
+                <img
+                  src="/images/shop-owner-hero.jpg"
+                  alt="Spaza shop owner using Spaza Tap"
+                  loading="eager"
+                  decoding="async"
+                  className="w-full h-full object-cover object-[center_42%]"
+                  width="900"
+                  height="520"
+                />
+              </picture>
             </div>
 
             {/* Feature Mini Cards 2x2 Grid (Hidden on short viewports based on responsive design) */}
@@ -466,7 +471,7 @@ export default function WelcomeScreen({
                 disabled={isLoading}
                 className="w-full h-13 bg-white border border-text-main/10 text-text-main font-bold text-sm rounded-[18px] shadow-xs active:scale-95 transition-transform flex items-center justify-center gap-3 disabled:opacity-70"
               >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                 Continue with Google
               </button>
 
@@ -573,7 +578,7 @@ export default function WelcomeScreen({
                 disabled={isLoading}
                 className="w-full h-12 bg-white border border-text-main/10 text-text-main font-bold text-sm rounded-[16px] shadow-xs active:scale-95 transition-transform flex items-center justify-center gap-3 disabled:opacity-70"
               >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                 Continue with Google
               </button>
 

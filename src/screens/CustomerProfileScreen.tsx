@@ -338,7 +338,7 @@ export default function CustomerProfileScreen({
         <section className="bg-white border border-[#2B1114]/8 rounded-[24px] p-5 flex items-center gap-4">
           <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-display font-black text-xl shrink-0 bg-[#FFF0E7] text-[#D94F12] border-2 border-primary/20 shadow-xs">
             {customer.photoUrl ? (
-              <img src={customer.photoUrl} alt={customer.name} className="w-full h-full object-cover" />
+              <img src={customer.photoUrl} alt={customer.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
             ) : (
               customer.initials || "C"
             )}
@@ -737,6 +737,8 @@ export default function CustomerProfileScreen({
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(customer.customerReferenceNumber || "")}`} 
                 alt={`${customer.name} ID`} 
                 className="w-full h-full object-contain" 
+                loading="lazy"
+                decoding="async"
               />
             </div>
             

@@ -168,13 +168,13 @@ export default function CustomersScreen({
                 <div
                   key={customer.id}
                   onClick={() => onViewCustomer(customer!.id || "")}
-                  className="bg-white border border-[#2B1114]/8 p-4 rounded-[24px] cursor-pointer hover:border-[#D94F12]/30 active:scale-[0.99] transition-all shadow-xs relative overflow-hidden"
+                  className="bg-white border border-[#2B1114]/8 p-4 rounded-[24px] cursor-pointer relative"
                 >
                   {/* Top row with initial, name details and owed money */}
                   <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center font-display font-black text-sm shrink-0 bg-[#FFF0E7] text-[#D94F12] border border-primary/20">
                       {customer.photoUrl ? (
-                        <img src={customer.photoUrl} alt={customer.name} className="w-full h-full object-cover" />
+                        <img src={customer.photoUrl} alt={customer.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         customer.initials || "C"
                       )}

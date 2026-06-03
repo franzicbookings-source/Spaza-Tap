@@ -16,7 +16,7 @@ export function WholesalePriceWatchScreen({ onBack, shopId, ownerUserId }: { onB
 
   useEffect(() => {
     if (!shopId) return;
-    const q = query(collection(db, "wholesale_prices"), where("shopId", "==", shopId));
+    const q = query(collection(db, "wholesale_prices"), where("shopId", "==", shopId), where("ownerUserId", "==", ownerUserId));
     const unsub = onSnapshot(q, (snap) => {
       const arr: WholesalePrice[] = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() } as WholesalePrice));

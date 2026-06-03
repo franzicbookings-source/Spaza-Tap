@@ -184,7 +184,7 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#FBF5EC] font-sans pb-32">
+    <div className="flex flex-col min-h-full bg-[#FBF5EC] font-sans pb-32">
       
       {/* Redesigned Top Header */}
       <header className="px-5 pt-5 pb-4 bg-white border-b border-[#2B1114]/8 shrink-0">
@@ -215,10 +215,10 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
       <div className="flex-1 flex flex-col md:flex-row gap-5 p-5 min-h-0">
         
         {/* Proximity inventory product selector */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[24px] border border-[#2B1114]/8 overflow-hidden shadow-2xs">
+        <div className="md:flex-1 w-full flex flex-col md:min-h-0 bg-white rounded-[24px] border border-[#2B1114]/8 overflow-hidden shadow-2xs pos-product-section">
           
           {/* Header search bar - 56px high, 18px rounded */}
-          <div className="p-3.5 border-b border-text-main/5 bg-white shrink-0">
+          <div className="p-3.5 border-b border-text-main/5 bg-white shrink-0 font-sans">
             <div className="relative h-14 bg-[#FBF5EC] border border-text-main/10 rounded-[18px] flex items-center px-4">
               <Search className="text-text-muted w-5 h-5 shrink-0 mr-2.5" />
               <input 
@@ -230,15 +230,15 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
               />
             </div>
           </div>
-
+ 
           {/* Grid listing product catalog */}
-          <div className="flex-1 overflow-y-auto p-4.5 bg-background select-none">
+          <div className="w-full md:flex-1 md:overflow-y-auto overflow-visible p-4.5 bg-background select-none">
             {products.length === 0 ? (
               <div className="text-center text-text-muted font-bold py-16 text-xs bg-white rounded-2xl border border-text-main/5">
                 No active items found. Please setup products inside inventory.
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 gap-3 md:gap-3.5 w-full pos-product-grid">
                 {filteredProducts.map(p => {
                   const qtyLeft = p.stockQuantity;
                   const isLow = qtyLeft <= p.lowStockLevel;
@@ -249,26 +249,26 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
                       key={p.id} 
                       onClick={() => addToCart(p)}
                       disabled={isOut}
-                      className={`flex flex-col text-left p-4.5 rounded-[22px] border bg-white relative transition-all active:scale-[0.98] ${
+                      className={`flex flex-col text-left p-4.5 rounded-[20px] border bg-white relative transition-all active:scale-[0.98] min-w-0 w-full box-border h-[132px] justify-between pos-product-card ${
                         isOut 
                           ? "border-text-main/5 opacity-40 cursor-not-allowed" 
                           : "border-text-main/10 hover:border-[#D94F12] hover:shadow-xs"
                       }`}
                     >
-                      <span className="font-extrabold text-text-main text-sm truncate uppercase tracking-tight leading-snug">
+                      <span className="font-extrabold text-text-main text-sm truncate uppercase tracking-tight leading-snug w-full block pos-product-name">
                         {p.name}
                       </span>
                       
                       <div className="flex items-center gap-1.5 mt-1">
-                        <Tag className="w-3.5 h-3.5 text-text-muted" />
-                        <span className={`text-[10px] font-mono leading-none ${isOut ? "text-danger" : isLow ? "text-warning" : "text-text-light font-extrabold"}`}>
+                        <Tag className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                        <span className={`text-[10px] font-mono leading-none truncate ${isOut ? "text-danger" : isLow ? "text-warning" : "text-text-light font-extrabold"}`}>
                           {isOut ? "Out of Stock" : `${qtyLeft} available`}
                         </span>
                       </div>
-
-                      <div className="mt-4 pt-2.5 border-t border-text-main/5 flex justify-between items-baseline w-full">
+ 
+                      <div className="mt-auto pt-2 border-t border-text-main/5 flex justify-between items-baseline w-full">
                         <span className="text-[9px] text-text-muted uppercase font-bold tracking-wider">Price</span>
-                        <span className="font-black text-[#D94F12] text-sm font-display tracking-tight leading-none">R {p.sellingPrice.toFixed(2)}</span>
+                        <span className="font-black text-[#D94F12] text-sm font-display tracking-tight leading-none shrink-0">R {p.sellingPrice.toFixed(2)}</span>
                       </div>
                     </button>
                   );
@@ -277,9 +277,9 @@ export default function TillScreen({ shopId, ownerUserId, customers }: TillScree
             )}
           </div>
         </div>
-
+ 
         {/* Floating Cart checkout widget sidebar */}
-        <div className="w-full md:w-80 flex flex-col h-[320px] md:h-full bg-white rounded-[24px] border border-[#2B1114]/8 overflow-hidden shrink-0 shadow-2xs">
+        <div className="w-full md:w-80 flex flex-col h-[320px] md:h-full mt-5 md:mt-0 bg-white rounded-[24px] border border-[#2B1114]/8 overflow-hidden shrink-0 shadow-2xs">
           
           <div className="p-4 bg-[#2B1114] text-white flex items-center justify-between shrink-0">
             <h2 className="font-display font-black tracking-widest uppercase text-[10px]">Current Cart Queue</h2>

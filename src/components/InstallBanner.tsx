@@ -152,12 +152,11 @@ export function InstallBanner() {
         }}
       >
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden border border-[#C8521A]/20 shadow-md bg-white flex items-center justify-center relative">
-            <span className="text-[#3B1A1A] font-bold text-lg absolute">ST</span>
+          <div className="w-12 h-12 rounded-xl shrink-0 overflow-hidden flex items-center justify-center relative bg-transparent">
             <img 
               src="/icons/icon-192x192.png" 
               alt="" 
-              className="w-full h-full object-cover relative z-10"
+              className="w-full h-full object-contain relative z-10"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }} 
